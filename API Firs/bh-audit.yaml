@@ -1,0 +1,364 @@
+openapi: 3.0.3
+info:
+  title: Breaze & Harold Veterinary System — bh-audit API
+  description: |-
+    Especificación OpenAPI del microservicio **bh-audit**.
+
+    Este servicio recibe, almacena y permite consultar eventos de trazabilidad enviados por **bh-core**.
+    No maneja usuarios propios ni sesiones. Sus endpoints son de uso interno dentro del clúster de Kubernetes
+    y no deben exponerse directamente al exterior.
+  version: 1.0.0
+  contact:
+    name: Equipo de Desarrollo B&H
+    email: dev@bh-vet.com
+  license:
+    name: Propietario — Breaze & Harold Veterinary System
+
+servers:
+  - url: https://api.bh-vet.com/bh-audit/v1
+    description: Servidor de producción — bh-audit
+  - url: http://localhost:8081/bh-audit/v1
+    description: Entorno local — bh-audit
+
+tags:
+  - name: Audit — Trazabilidad
+    description: Recepción, almacenamiento y consulta del historial de acciones del sistema.
+
+paths:
+  /eventos:
+    post:
+      tags:
+        - Audit — Trazabilidad
+      summary: Registrar evento de auditoría
+      description: |
+        **Uso interno exclusivo.**
+
+        bh-core notifica a bh-audit cada vez que ocurre una acción relevante en el sistema.
+        Este endpoint no está expuesto al exterior del clúster de Kubernetes y solo debe ser
+        invocado por bh-core mediante la cabecera `X-Internal-Service-Key`.
+
+        Si bh-audit no está disponible momentáneamente, bh-core debe continuar operando con normalidad.
+      operationId: registrarEvento
+      security:
+        - InternalServiceKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoAuditoriaRequest'
+            example:
+              usuarioId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              nombreUsuario: María García
+              rol: recepcionista
+              tipoAccion: CREACION_CITA
+              descripcion: Se agendó una cita para la mascota Luna.
+              fechaHora: '2026-05-16T15:30:00Z'
+              metadata:
+                citaId: 9f83f23a-2f91-4c28-983c-3a41b102ab77
+                mascotaId: 76411bdf-8448-4062-957e-6f784a9a3e91
+      responses:
+        '201':
+          description: Evento registrado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoAuditoria'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /eventos/consulta:
+    get:
+      tags:
+        - Audit — Trazabilidad
+      summary: Consultar historial de eventos
+      description: |
+        **Uso interno exclusivo.**
+
+        bh-core invoca este endpoint para consultar el historial de acciones con filtros y generar
+        el reporte PDF de trazabilidad. Este endpoint no debe exponerse directamente al exterior
+        del clúster.
+      operationId: consultarEventos
+      security:
+        - InternalServiceKey: []
+      parameters:
+        - name: usuarioId
+          in: query
+          required: false
+          description: Filtra los eventos ejecutados por un usuario específico.
+          schema:
+            type: string
+            format: uuid
+        - name: rol
+          in: query
+          required: false
+          description: Filtra los eventos por rol del usuario que ejecutó la acción.
+          schema:
+            $ref: '#/components/schemas/RolUsuario'
+        - name: tipoAccion
+          in: query
+          required: false
+          description: Filtra los eventos por tipo de acción registrada.
+          schema:
+            $ref: '#/components/schemas/TipoAccion'
+        - $ref: '#/components/parameters/FechaDesde'
+        - $ref: '#/components/parameters/FechaHasta'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Historial de eventos paginado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedEventosAuditoria'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+components:
+  securitySchemes:
+    InternalServiceKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Service-Key
+      description: |
+        Clave de autenticación interna para comunicación entre microservicios
+        (`bh-core` → `bh-audit`). No debe exponerse al exterior del clúster.
+
+  parameters:
+    FechaDesde:
+      name: fechaDesde
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      description: Fecha inicial del rango de consulta en formato `YYYY-MM-DD`.
+    FechaHasta:
+      name: fechaHasta
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      description: Fecha final del rango de consulta en formato `YYYY-MM-DD`.
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+      description: Número de página, iniciando en 0.
+    Size:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+      description: Cantidad de elementos por página.
+
+  responses:
+    BadRequest:
+      description: Datos de entrada inválidos, incompletos o filtros mal formados.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            codigo: VALIDACION_FALLIDA
+            mensaje: Los datos proporcionados no son válidos.
+            detalles:
+              - campo: fechaDesde
+                error: La fecha inicial debe tener formato YYYY-MM-DD.
+    Unauthorized:
+      description: Clave interna ausente o inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            codigo: CLAVE_INTERNA_INVALIDA
+            mensaje: Se requiere una clave interna válida para acceder a este recurso.
+    ServiceUnavailable:
+      description: El servicio de auditoría no puede procesar la solicitud temporalmente.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            codigo: AUDITORIA_NO_DISPONIBLE
+            mensaje: El servicio de auditoría no está disponible temporalmente.
+
+  schemas:
+    RolUsuario:
+      type: string
+      enum:
+        - cliente
+        - recepcionista
+        - veterinario
+        - administrador
+      description: Rol del usuario que ejecutó la acción en bh-core.
+
+    TipoAccion:
+      type: string
+      enum:
+        - REGISTRO_USUARIO
+        - VERIFICACION_CORREO
+        - APROBACION_CUENTA
+        - RECHAZO_CUENTA
+        - LOGIN_EXITOSO
+        - LOGIN_FALLIDO
+        - CREACION_CITA
+        - CAMBIO_ESTADO_CITA
+        - PAGO_CITA
+        - CREACION_HISTORIAL
+        - EDICION_HISTORIAL
+        - REGISTRO_VACUNA
+        - INICIO_HOSPITALIZACION
+        - ALTA_HOSPITALIZACION
+        - CREACION_FACTURA
+        - ANULACION_FACTURA
+        - AJUSTE_INVENTARIO
+        - CREACION_SERVICIO
+        - EDICION_SERVICIO
+        - DESACTIVACION_SERVICIO
+        - SUSPENSION_USUARIO
+      description: Tipo de acción relevante registrada por el sistema.
+
+    EventoAuditoriaRequest:
+      type: object
+      required:
+        - tipoAccion
+        - descripcion
+        - fechaHora
+      properties:
+        usuarioId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID del usuario que ejecutó la acción. Puede ser nulo en eventos como login fallido.
+        nombreUsuario:
+          type: string
+          nullable: true
+          description: Nombre del usuario o identificador usado en la acción.
+        rol:
+          allOf:
+            - $ref: '#/components/schemas/RolUsuario'
+          nullable: true
+          description: Rol del usuario. Puede ser nulo si la acción ocurrió antes de autenticar al usuario.
+        tipoAccion:
+          $ref: '#/components/schemas/TipoAccion'
+        descripcion:
+          type: string
+          minLength: 5
+          maxLength: 1000
+          description: Descripción legible de la acción ejecutada.
+        fechaHora:
+          type: string
+          format: date-time
+          description: Fecha y hora exacta en que ocurrió la acción.
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Datos adicionales del evento, por ejemplo ID del recurso afectado.
+
+    EventoAuditoria:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        usuarioId:
+          type: string
+          format: uuid
+          nullable: true
+        nombreUsuario:
+          type: string
+          nullable: true
+        rol:
+          allOf:
+            - $ref: '#/components/schemas/RolUsuario'
+          nullable: true
+        tipoAccion:
+          $ref: '#/components/schemas/TipoAccion'
+        descripcion:
+          type: string
+        fechaHora:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        creadoEn:
+          type: string
+          format: date-time
+          description: Fecha y hora en que bh-audit almacenó el evento.
+
+    PagedEventosAuditoria:
+      allOf:
+        - $ref: '#/components/schemas/PaginationMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/EventoAuditoria'
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Número de página actual, iniciando en 0.
+        size:
+          type: integer
+          description: Tamaño de la página.
+        totalElements:
+          type: integer
+          description: Total de elementos encontrados.
+        totalPages:
+          type: integer
+          description: Total de páginas disponibles.
+        first:
+          type: boolean
+          description: Indica si es la primera página.
+        last:
+          type: boolean
+          description: Indica si es la última página.
+
+    ErrorResponse:
+      type: object
+      required:
+        - codigo
+        - mensaje
+      properties:
+        codigo:
+          type: string
+          description: Código de error interno del sistema.
+        mensaje:
+          type: string
+          description: Descripción legible del error.
+        detalles:
+          type: array
+          items:
+            type: object
+            properties:
+              campo:
+                type: string
+              error:
+                type: string
