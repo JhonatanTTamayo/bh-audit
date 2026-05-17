@@ -1,0 +1,25 @@
+# Node / NestJS
+node_modules/
+servicios/bh-core/node_modules/
+
+# Build
+dist/
+servicios/bh-core/dist/
+
+# Env
+.env
+*.env
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store
+Thumbs.db
