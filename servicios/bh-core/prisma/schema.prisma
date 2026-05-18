@@ -4,12 +4,20 @@ generator client {
 
 datasource db {
   provider = "mysql"
+  url      = env("DATABASE_URL")
 }
+
+/// Representa a los usuarios registrados dentro del sistema.
+///
+/// Este modelo almacena la información principal del usuario,
+/// incluyendo sus datos personales, credenciales cifradas,
+/// estado de cuenta y relación con su rol.
 
 model Usuario {
   id               String        @id @default(uuid())
   nombreCompleto   String        @map("nombre_completo")
   correo           String        @unique
+  telefono         String?
   contrasenaHash   String        @map("contrasena_hash")
   estado           EstadoUsuario @default(PENDIENTE_VERIFICACION)
   correoVerificado Boolean       @default(false) @map("correo_verificado")
@@ -25,6 +33,11 @@ model Usuario {
   @@map("usuarios")
 }
 
+/// Representa los roles disponibles dentro del sistema.
+///
+/// Un rol permite clasificar a los usuarios y será utilizado
+/// posteriormente para aplicar reglas de autorización.
+
 model Rol {
   id          String  @id @default(uuid())
   nombre      String  @unique
@@ -38,6 +51,12 @@ model Rol {
 
   @@map("roles")
 }
+
+/// Representa los códigos usados para verificar el correo
+/// electrónico de un usuario.
+///
+/// Este modelo permitirá controlar si un código ya fue usado,
+/// cuándo expira y a qué usuario pertenece.
 
 model CodigoVerificacion {
   id       String    @id @default(uuid())
@@ -54,8 +73,11 @@ model CodigoVerificacion {
   @@map("codigos_verificacion")
 }
 
+/// Define los posibles estados de una cuenta de usuario.
+
 enum EstadoUsuario {
   PENDIENTE_VERIFICACION
+  PENDIENTE_APROBACION
   ACTIVO
   SUSPENDIDO
   RECHAZADO
