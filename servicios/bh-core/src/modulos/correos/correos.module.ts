@@ -1,4 +1,16 @@
 import { Module } from '@nestjs/common';
+import { CorreosService } from './correos.service';
 
-@Module({})
+
+
+/**
+ * Módulo de correos.
+ *
+ * Este módulo será responsable de centralizar la lógica relacionada
+ * con el envío de correos electrónicos.
+ */
+@Module({
+  providers: [CorreosService],
+  exports: [CorreosService],
+})
 export class CorreosModule {}
