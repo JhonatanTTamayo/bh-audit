@@ -6,6 +6,7 @@ import {
 import { EstadoUsuario } from '@prisma/client';
 
 import { PrismaService } from '../../basedatos/prisma.service';
+import { FiltroUsuariosDto } from './dto/filtro-usuarios.dto';
 
 /**
  * Servicio encargado de gestionar operaciones administrativas
@@ -207,10 +208,76 @@ async suspenderCuenta(usuarioId: string) {
   };
 } 
     
+    /**
+ * Lista usuarios registrados aplicando filtros opcionales por rol y estado.
+ */
+async listarUsuarios(filtros: FiltroUsuariosDto) {
+  const page = filtros.page ?? 0;
+  const size = filtros.size ?? 20;
 
+  const where = {
+    ...(filtros.estado && {
+      estado: filtros.estado,
+    }),
+    ...(filtros.rol && {
+      rol: {
+        nombre: filtros.rol,
+      },
+    }),
+  };
 
+  const [usuarios, totalElements] = await Promise.all([
+    this.prisma.usuario.findMany({
+      where,
+      include: {
+        rol: true,
+      },
+      orderBy: {
+        creadoEn: 'desc',
+      },
+      skip: page * size,
+      take: size,
+    }),
+    this.prisma.usuario.count({
+      where,
+    }),
+  ]);
 
+  return {
+    page,
+    size,
+    totalElements,
+    totalPages: Math.ceil(totalElements / size),
+    content: usuarios.map((usuario) => this.formatearUsuarioListado(usuario)),
+  };
+}
 
-
-
+    /**
+     * Formatea los datos básicos del usuario para el listado administrativo.
+     */
+    private formatearUsuarioListado(usuario: {
+    id: string;
+    nombreCompleto: string;
+    correo: string;
+    telefono: string | null;
+    estado: EstadoUsuario;
+    correoVerificado: boolean;
+    creadoEn: Date;
+    actualizadoEn: Date;
+    rol: {
+        nombre: string;
+    };
+    }) {
+    return {
+        id: usuario.id,
+        nombreCompleto: usuario.nombreCompleto,
+        correo: usuario.correo,
+        telefono: usuario.telefono,
+        rol: usuario.rol.nombre,
+        estado: usuario.estado,
+        correoVerificado: usuario.correoVerificado,
+        creadoEn: usuario.creadoEn,
+        actualizadoEn: usuario.actualizadoEn,
+    };
+    }
 }
