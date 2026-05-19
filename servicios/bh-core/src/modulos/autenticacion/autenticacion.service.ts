@@ -1,10 +1,13 @@
-import {ConflictException,Injectable,NotFoundException,BadRequestException} from '@nestjs/common';
+import {ConflictException,Injectable,NotFoundException,BadRequestException,UnauthorizedException,ForbiddenException,} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { EstadoUsuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { VerificarCorreoDto}  from './dto/verificar-correo.dto';
+
+import { VerificarCorreoDto } from './dto/verificar-correo.dto';
 import { PrismaService } from '../../basedatos/prisma.service';
 import { CorreosService } from '../correos/correos.service';
 import { RegistroUsuarioDto } from './dto/registro-usuario.dto';
+import { LoginDto } from './dto/login-usuario.dto';
 
 /**
  * Servicio encargado de manejar los procesos de autenticación.
@@ -14,6 +17,7 @@ export class AutenticacionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly correosService: CorreosService,
+    private readonly jwtService: JwtService,
   ) {}
 
   /**
@@ -75,6 +79,74 @@ export class AutenticacionService {
     return {
       mensaje:
         'Usuario registrado correctamente. Revisa tu correo para verificar la cuenta.',
+      usuario: {
+        id: usuario.id,
+        nombreCompleto: usuario.nombreCompleto,
+        correo: usuario.correo,
+        telefono: usuario.telefono,
+        rol: usuario.rol.nombre,
+        estado: usuario.estado,
+        correoVerificado: usuario.correoVerificado,
+      },
+    };
+  }
+
+  /**
+   * Inicia sesión validando correo, contraseña, verificación y estado del usuario.
+   */
+  async iniciarSesion(loginDto: LoginDto) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: {
+        correo: loginDto.correo,
+      },
+      include: {
+        rol: true,
+      },
+    });
+
+    if (!usuario) {
+      throw new UnauthorizedException({
+        codigo: 'CREDENCIALES_INVALIDAS',
+        mensaje: 'El correo o la contraseña son incorrectos.',
+      });
+    }
+
+    const contrasenaValida = await bcrypt.compare(
+      loginDto.contrasena,
+      usuario.contrasenaHash,
+    );
+
+    if (!contrasenaValida) {
+      throw new UnauthorizedException({
+        codigo: 'CREDENCIALES_INVALIDAS',
+        mensaje: 'El correo o la contraseña son incorrectos.',
+      });
+    }
+
+    if (!usuario.correoVerificado) {
+      throw new ForbiddenException({
+        codigo: 'CORREO_NO_VERIFICADO',
+        mensaje: 'Debes verificar tu correo electrónico antes de iniciar sesión.',
+      });
+    }
+
+    if (usuario.estado !== EstadoUsuario.ACTIVO) {
+      throw new ForbiddenException({
+        codigo: 'USUARIO_INACTIVO',
+        mensaje: 'El usuario no se encuentra activo.',
+      });
+    }
+
+    const payload = {
+      sub: usuario.id,
+      correo: usuario.correo,
+      rol: usuario.rol.nombre,
+    };
+
+    const token = await this.jwtService.signAsync(payload);
+
+    return {
+      token,
       usuario: {
         id: usuario.id,
         nombreCompleto: usuario.nombreCompleto,
