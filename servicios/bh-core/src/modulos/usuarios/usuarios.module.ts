@@ -1,11 +1,28 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 
+import { BasedatosModule } from '../../basedatos/basedatos.module';
+import { UsuariosController } from './usuarios.controller';
+import { UsuariosService } from './usuarios.service';
 
 /**
  * Módulo de usuarios.
  *
- * Este módulo será responsable de centralizar la lógica relacionada
- * con la gestión de usuarios del sistema.
+ * Este módulo centraliza la lógica relacionada con la gestión
+ * administrativa de usuarios del sistema.
  */
-@Module({})
+@Module({
+  imports: [
+    BasedatosModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'clave_local_temporal',
+      signOptions: {
+        expiresIn: '1d',
+      },
+    }),
+  ],
+  controllers: [UsuariosController],
+  providers: [UsuariosService],
+  exports: [UsuariosService],
+})
 export class UsuariosModule {}
