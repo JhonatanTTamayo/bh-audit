@@ -54,4 +54,16 @@ export class UsuariosController {
   rechazarCuenta(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
     return this.usuariosService.rechazarCuenta(usuarioId);
   }
+
+
+  /**
+ * Suspende una cuenta de usuario existente.
+ *
+ * Ruta:
+ * PATCH /api/usuarios/:usuarioId/suspender
+ */
+@Patch(':usuarioId/suspender')
+suspenderCuenta(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
+  return this.usuariosService.suspenderCuenta(usuarioId);
+    }   
 }

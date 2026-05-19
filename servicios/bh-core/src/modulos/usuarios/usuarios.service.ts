@@ -161,4 +161,56 @@ export class UsuariosService {
       creadoEn: usuario.creadoEn,
     };
   }
+
+  /**
+ * Suspende una cuenta de usuario existente.
+ */
+async suspenderCuenta(usuarioId: string) {
+  const usuario = await this.prisma.usuario.findUnique({
+    where: {
+      id: usuarioId,
+    },
+    include: {
+      rol: true,
+    },
+  });
+
+  if (!usuario) {
+    throw new NotFoundException({
+      codigo: 'CUENTA_NO_ENCONTRADA',
+      mensaje: 'La cuenta solicitada no existe.',
+    });
+  }
+
+  if (usuario.estado === EstadoUsuario.SUSPENDIDO) {
+    throw new BadRequestException({
+      codigo: 'CUENTA_YA_SUSPENDIDA',
+      mensaje: 'La cuenta ya se encuentra suspendida.',
+    });
+  }
+
+  const usuarioActualizado = await this.prisma.usuario.update({
+    where: {
+      id: usuario.id,
+    },
+    data: {
+      estado: EstadoUsuario.SUSPENDIDO,
+    },
+    include: {
+      rol: true,
+    },
+  });
+
+  return {
+    mensaje: 'Cuenta suspendida correctamente.',
+    usuario: this.formatearUsuario(usuarioActualizado),
+  };
+} 
+    
+
+
+
+
+
+
 }
