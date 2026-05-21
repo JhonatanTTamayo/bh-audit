@@ -46,8 +46,8 @@ export class AutenticacionService {
     }
 
     // Validar que un usuario con rol admin no se registre
-    if(rol.nombre == "ADMIN" ){
-      throw new BadRequestException("No es posible registrarse como admin");
+    if (rol.nombre === 'ADMIN') {
+      throw new ForbiddenException('No está permitido registrar administradores desde este endpoint',);
     }
 
     const contrasenaHash = await bcrypt.hash(registroDto.contrasena, 10);
