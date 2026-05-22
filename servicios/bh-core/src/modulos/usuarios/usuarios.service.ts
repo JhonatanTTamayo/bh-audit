@@ -11,6 +11,7 @@ import { PrismaService } from '../../basedatos/prisma.service';
 import { FiltroUsuariosDto } from './dto/filtro-usuarios.dto';
 import { CreateAdminDto } from './dto/crear-admin.dto';
 import { RechazarCuentaDto } from './dto/rechazar-cuenta.dto';
+import { CorreosService } from '../correos/correos.service';
 
 /**
  * Servicio encargado de gestionar operaciones administrativas
@@ -18,7 +19,10 @@ import { RechazarCuentaDto } from './dto/rechazar-cuenta.dto';
  */
 @Injectable()
 export class UsuariosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+      private readonly prisma: PrismaService,
+      private readonly correosService: CorreosService,
+  ) {}
 
   /**
    * Lista las cuentas de recepcionistas y veterinarios pendientes de aprobación.
@@ -345,9 +349,31 @@ async crearAdministrador(createAdminDto: CreateAdminDto) {
       },
     });
 
+    // Generar código de 6 dígitos
+  const codigo =Math.floor(100000 + Math.random() * 900000,).toString();
+
+  // Guardar código
+  await this.prisma.codigoVerificacion.create({
+    data: {
+      codigo,
+      usuarioId: usuario.id,
+      expiraEn: new Date(
+        Date.now() + 15 * 60 * 1000,
+      ),
+    },
+  });
+
+  // Enviar correo
+  await this.correosService.enviarCodigoVerificacion(
+    usuario.correo,
+    usuario.nombreCompleto,
+    codigo,
+  );
+
+
   return {
     mensaje:
-      'Administrador creado correctamente.',
+      'Administrador creado correctamente. Revisa tu correo para verificar la cuenta.',
 
     usuario:{
       id:usuario.id,
