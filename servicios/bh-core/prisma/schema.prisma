@@ -4,76 +4,53 @@ generator client {
 
 datasource db {
   provider = "mysql"
-   url= env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
-/// Representa a los usuarios registrados dentro del sistema.
-///
-/// Este modelo almacena la información principal del usuario,
-/// incluyendo sus datos personales, credenciales cifradas,
-/// estado de cuenta y relación con su rol.
-
+// ==========================================
+// MODELOS EXISTENTES (USUARIOS Y ROLES)
+// ==========================================
 model Usuario {
-  id               String        @id @default(uuid())
-  nombreCompleto   String        @map("nombre_completo")
-  correo           String        @unique
+  id               String          @id @default(uuid())
+  nombreCompleto   String          @map("nombre_completo")
+  correo           String          @unique
   telefono         String?
-  contrasenaHash   String        @map("contrasena_hash")
-  estado           EstadoUsuario @default(PENDIENTE_VERIFICACION)
-  correoVerificado Boolean       @default(false) @map("correo_verificado")
-
-  rolId String @map("rol_id")
-  rol   Rol    @relation(fields: [rolId], references: [id])
-
+  contrasenaHash   String          @map("contrasena_hash")
+  estado           EstadoUsuario   @default(PENDIENTE_VERIFICACION)
+  correoVerificado Boolean         @default(false) @map("correo_verificado")
+  rolId            String          @map("rol_id")
+  rol              Rol             @relation(fields: [rolId], references: [id])
   codigosVerificacion CodigoVerificacion[]
-
-  creadoEn      DateTime @default(now()) @map("creado_en")
-  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+  creadoEn         DateTime        @default(now()) @map("creado_en")
+  actualizadoEn    DateTime        @updatedAt @map("actualizado_en")
 
   @@map("usuarios")
 }
 
-/// Representa los roles disponibles dentro del sistema.
-///
-/// Un rol permite clasificar a los usuarios y será utilizado
-/// posteriormente para aplicar reglas de autorización.
-
 model Rol {
-  id          String  @id @default(uuid())
-  nombre      String  @unique
+  id          String   @id @default(uuid())
+  nombre      String   @unique
   descripcion String?
-  activo      Boolean @default(true)
-
-  usuarios Usuario[]
-
-  creadoEn      DateTime @default(now()) @map("creado_en")
+  activo      Boolean  @default(true)
+  usuarios    Usuario[]
+  creadoEn    DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
   @@map("roles")
 }
 
-/// Representa los códigos usados para verificar el correo
-/// electrónico de un usuario.
-///
-/// Este modelo permitirá controlar si un código ya fue usado,
-/// cuándo expira y a qué usuario pertenece.
-
 model CodigoVerificacion {
-  id       String    @id @default(uuid())
-  codigo   String
-  usado    Boolean   @default(false)
-  usadoEn  DateTime? @map("usado_en")
-  expiraEn DateTime  @map("expira_en")
-
-  usuarioId String  @map("usuario_id")
-  usuario   Usuario @relation(fields: [usuarioId], references: [id])
-
-  creadoEn DateTime @default(now()) @map("creado_en")
+  id        String   @id @default(uuid())
+  codigo    String
+  usado     Boolean  @default(false)
+  usadoEn   DateTime? @map("usado_en")
+  expiraEn  DateTime  @map("expira_en")
+  usuarioId String   @map("usuario_id")
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  creadoEn  DateTime @default(now()) @map("creado_en")
 
   @@map("codigos_verificacion")
 }
-
-/// Define los posibles estados de una cuenta de usuario.
 
 enum EstadoUsuario {
   PENDIENTE_VERIFICACION
@@ -81,4 +58,58 @@ enum EstadoUsuario {
   ACTIVO
   SUSPENDIDO
   RECHAZADO
+}
+
+// ==========================================
+// MODELOS PARA FACTURACIÓN Y ATENCIONES
+// ==========================================
+
+model Atencion {
+  id            String         @id @default(uuid())
+  fecha         DateTime       @default(now())
+  servicios     Servicio[]
+  medicamentos  Medicamento[]
+  factura       Factura?
+
+  @@map("atenciones")
+}
+
+model Servicio {
+  id          String   @id @default(uuid())
+  nombre      String
+  precio      Float
+  atencionId  String   @map("atencion_id")
+  atencion    Atencion @relation(fields: [atencionId], references: [id])
+
+  @@map("servicios")
+}
+
+model Medicamento {
+  id          String   @id @default(uuid())
+  nombre      String
+  precio      Float
+  cantidad    Int
+  atencionId  String   @map("atencion_id")
+  atencion    Atencion @relation(fields: [atencionId], references: [id])
+
+  @@map("medicamentos")
+}
+
+enum EstadoFactura {
+  EMITIDA
+  ANULADA
+}
+
+model Factura {
+  id              String        @id @default(uuid())
+  atencionId      String        @unique @map("atencion_id")
+  atencion        Atencion      @relation(fields: [atencionId], references: [id])
+  totalFacturado  Float         @map("total_facturado")
+  descuento       Float         @default(0.0)
+  estado          EstadoFactura @default(EMITIDA)
+  motivoAnulacion String?       @db.Text @map("motivo_anulacion")
+  creadoEn        DateTime      @default(now()) @map("creado_en")
+  actualizadoEn   DateTime      @updatedAt @map("actualizado_en")
+
+  @@map("facturas")
 }
