@@ -28,6 +28,7 @@ model Usuario {
   codigosVerificacion CodigoVerificacion[]
   mascotas            Mascota[]            @relation("ClienteMascotas")
   citasVeterinario    Cita[]               @relation("VeterinarioCitas")
+  historialComoVeterinario HistorialMedico[] @relation("VeterinarioHistorial")
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -93,6 +94,7 @@ model Mascota {
   cliente   Usuario @relation("ClienteMascotas", fields: [clienteId], references: [id])
 
   citas Cita[]
+  historialMedico HistorialMedico[]
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -141,6 +143,7 @@ model Cita {
 
   servicios CitaServicio[]
   pago      Pago?
+  historialMedico HistorialMedico?
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -218,4 +221,59 @@ enum MetodoPago {
   EFECTIVO
   TARJETA
   TRANSFERENCIA
+}
+
+/// Representa el registro médico generado tras una consulta veterinaria.
+///
+/// Almacena el resultado clínico de una cita: motivo, diagnóstico,
+/// tratamiento, medicamentos prescritos, peso y próxima visita.
+/// Solo puede ser editado durante las primeras 24 horas tras su creación.
+
+model HistorialMedico {
+  id                String   @id @default(uuid())
+  motivoVisita      String   @map("motivo_visita") @db.Text
+  diagnostico       String   @db.Text
+  tratamiento       String   @db.Text
+  peso              Decimal  @db.Decimal(10, 2)
+  fechaProximaVisita DateTime? @map("fecha_proxima_visita") @db.Date
+  editableHasta     DateTime  @map("editable_hasta")
+
+  mascotaId     String  @map("mascota_id")
+  mascota       Mascota @relation(fields: [mascotaId], references: [id])
+
+  citaId        String  @unique @map("cita_id")
+  cita          Cita    @relation(fields: [citaId], references: [id])
+
+  veterinarioId String  @map("veterinario_id")
+  veterinario   Usuario @relation("VeterinarioHistorial", fields: [veterinarioId], references: [id])
+
+  medicamentos  MedicamentoPrescrito[]
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@index([mascotaId])
+  @@index([veterinarioId])
+  @@map("historial_medico")
+}
+
+/// Representa un medicamento prescrito dentro de un registro médico.
+///
+/// Cada medicamento está asociado a un producto del inventario
+/// e incluye dosis y duración del tratamiento.
+
+model MedicamentoPrescrito {
+  id             String @id @default(uuid())
+  dosis          String
+  duracion       String
+
+  historialId    String         @map("historial_id")
+  historial      HistorialMedico @relation(fields: [historialId], references: [id], onDelete: Cascade)
+
+  productoId     String  @map("producto_id")
+
+  creadoEn       DateTime @default(now()) @map("creado_en")
+
+  @@index([historialId])
+  @@map("medicamentos_prescritos")
 }
