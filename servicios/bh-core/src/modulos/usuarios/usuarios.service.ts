@@ -9,7 +9,8 @@ import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../../basedatos/prisma.service';
 import { FiltroUsuariosDto } from './dto/filtro-usuarios.dto';
-import { CreateAdminDto } from './dto/crear-admin';
+import { CreateAdminDto } from './dto/crear-admin.dto';
+import { RechazarCuentaDto } from './dto/rechazar-cuenta.dto';
 
 /**
  * Servicio encargado de gestionar operaciones administrativas
@@ -71,7 +72,7 @@ export class UsuariosService {
   /**
    * Rechaza una cuenta pendiente de aprobación administrativa.
    */
-  async rechazarCuenta(usuarioId: string) {
+  async rechazarCuenta(usuarioId: string, rechazarCuentaDto:RechazarCuentaDto) {
     const usuario = await this.obtenerUsuarioInternoPendiente(usuarioId);
 
     const usuarioActualizado = await this.prisma.usuario.update({
@@ -80,6 +81,8 @@ export class UsuariosService {
       },
       data: {
         estado: EstadoUsuario.RECHAZADO,
+        motivoRechazo:
+          rechazarCuentaDto.motivo,
       },
       include: {
         rol: true,

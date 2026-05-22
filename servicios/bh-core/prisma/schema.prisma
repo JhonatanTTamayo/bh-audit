@@ -21,6 +21,7 @@ model Usuario {
   contrasenaHash   String        @map("contrasena_hash")
   estado           EstadoUsuario @default(PENDIENTE_VERIFICACION)
   correoVerificado Boolean       @default(false) @map("correo_verificado")
+  motivoRechazo    String?       @map("motivo_rechazo")
 
   rolId String @map("rol_id")
   rol   Rol    @relation(fields: [rolId], references: [id])

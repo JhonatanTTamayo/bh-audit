@@ -15,7 +15,8 @@ import { JwtAuthGuard } from '../autenticacion/guards/jwt-auth.guard';
 import { RolesGuard } from '../autenticacion/guards/roles.guard';
 import { UsuariosService } from './usuarios.service';
 import { FiltroUsuariosDto } from './dto/filtro-usuarios.dto';
-import { CreateAdminDto } from './dto/crear-admin';
+import { CreateAdminDto } from './dto/crear-admin.dto';
+import { RechazarCuentaDto } from './dto/rechazar-cuenta.dto';
 
 /**
  * Controlador encargado de exponer endpoints administrativos
@@ -56,10 +57,10 @@ export class UsuariosController {
      * PATCH /api/usuarios/:usuarioId/rechazar
      */
     @Patch(':usuarioId/rechazar')
-    rechazarCuenta(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
-        return this.usuariosService.rechazarCuenta(usuarioId);
+    rechazarCuenta(@Param('usuarioId', ParseUUIDPipe)usuarioId:string,
+    @Body()rechazarCuentaDto:RechazarCuentaDto){
+        return this.usuariosService.rechazarCuenta(usuarioId,rechazarCuentaDto);
     }
-
 
     /**
      * Suspende una cuenta de usuario existente.
