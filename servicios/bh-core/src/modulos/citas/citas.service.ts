@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EstadoCita, EstadoUsuario, Prisma } from '@prisma/client';
@@ -67,6 +68,67 @@ export class CitasService {
       last: totalPages === 0 || page >= totalPages - 1,
       content: citas.map((cita) => this.formatearCita(cita)),
     };
+  }
+
+  /**
+   * Obtiene una cita por su ID aplicando reglas de acceso por rol.
+   */
+  async obtenerCita(citaId: string, usuario: JwtPayload) {
+    const where: Prisma.CitaWhereInput = { id: citaId };
+
+    this.aplicarAlcancePorRol(where, usuario);
+
+    const cita = await this.prisma.cita.findFirst({
+      where,
+      include: this.incluirRelacionesCita(),
+    });
+
+    if (!cita) {
+      throw new NotFoundException({
+        codigo: 'CITA_NO_ENCONTRADA',
+        mensaje: 'La cita solicitada no existe o no tienes permiso para verla.',
+      });
+    }
+
+    return this.formatearCita(cita);
+  }
+
+  /**
+   * Marca una cita como finalizada.
+   */
+  async finalizarCita(citaId: string, usuario: JwtPayload) {
+    const cita = await this.prisma.cita.findFirst({
+      where: {
+        id: citaId,
+        veterinarioId: usuario.sub,
+      },
+      include: this.incluirRelacionesCita(),
+    });
+
+    if (!cita) {
+      throw new NotFoundException({
+        codigo: 'CITA_NO_ENCONTRADA',
+        mensaje: 'La cita no existe o no pertenece al veterinario autenticado.',
+      });
+    }
+
+    if (cita.estado !== EstadoCita.CONFIRMADA) {
+      throw new BadRequestException({
+        codigo: 'CITA_NO_FINALIZABLE',
+        mensaje:
+          'Solo las citas confirmadas pueden marcarse como finalizadas.',
+      });
+    }
+
+    const citaActualizada = await this.prisma.cita.update({
+      where: { id: cita.id },
+      data: {
+        estado: EstadoCita.FINALIZADA,
+      },
+      include: this.incluirRelacionesCita(),
+    });
+
+    return this.formatearCita(citaActualizada);
   }
 
   /**
@@ -204,7 +266,7 @@ export class CitasService {
 
   private validarPagoObligatorio(crearCitaDto: CrearCitaDto) {
     if (!crearCitaDto.pago) {
-      throw new BadRequestException({
+      throw new UnprocessableEntityException({
         codigo: 'PAGO_OBLIGATORIO',
         mensaje: 'El pago es obligatorio para agendar la cita.',
       });
