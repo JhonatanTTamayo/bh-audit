@@ -19,6 +19,7 @@ import { CitasService } from './citas.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { FiltroCitasDto } from './dto/filtro-citas.dto';
 import { MotivoRequestDto } from './dto/motivo-request.dto';
+import { DisponibilidadQueryDto } from './dto/disponibilidad.dto';
 
 /**
  * Controlador encargado de exponer endpoints relacionados con citas.
@@ -87,6 +88,21 @@ export class CitasController {
     @Req() request: RequestConUsuario,
   ) {
     return this.citasService.cancelarCita(citaId, motivo, request.usuario);
+  }
+
+  /**
+   * Consulta disponibilidad de un veterinario en una fecha.
+   *
+   * Ruta:
+   * GET /api/citas/disponibilidad
+   */
+  @Get('disponibilidad')
+  @Roles('RECEPCIONISTA', 'CLIENTE')
+  disponibilidad(
+    @Query() query: DisponibilidadQueryDto,
+    @Req() request: RequestConUsuario,
+  ) {
+    return this.citasService.consultarDisponibilidad(query, request.usuario);
   }
 
   /**
