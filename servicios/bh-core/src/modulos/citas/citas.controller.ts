@@ -2,7 +2,10 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  Patch,
   Post,
+  ParseUUIDPipe,
   Query,
   Req,
   UseGuards,
@@ -37,6 +40,36 @@ export class CitasController {
     @Req() request: RequestConUsuario,
   ) {
     return this.citasService.listarCitas(filtros, request.usuario);
+  }
+
+  /**
+   * Obtiene una cita por su ID.
+   *
+   * Ruta:
+   * GET /api/citas/:citaId
+   */
+  @Get(':citaId')
+  @Roles('CLIENTE', 'VETERINARIO', 'RECEPCIONISTA', 'ADMIN')
+  obtenerCita(
+    @Param('citaId', new ParseUUIDPipe()) citaId: string,
+    @Req() request: RequestConUsuario,
+  ) {
+    return this.citasService.obtenerCita(citaId, request.usuario);
+  }
+
+  /**
+   * Marca una cita como finalizada.
+   *
+   * Ruta:
+   * PATCH /api/citas/:citaId/finalizar
+   */
+  @Patch(':citaId/finalizar')
+  @Roles('VETERINARIO')
+  finalizarCita(
+    @Param('citaId', new ParseUUIDPipe()) citaId: string,
+    @Req() request: RequestConUsuario,
+  ) {
+    return this.citasService.finalizarCita(citaId, request.usuario);
   }
 
   /**

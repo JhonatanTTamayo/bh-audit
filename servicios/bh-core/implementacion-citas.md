@@ -448,6 +448,50 @@ Responsabilidades por archivo:
 
 El controlador no contiene reglas de negocio. Su responsabilidad se limita a recibir el DTO validado, obtener el usuario autenticado desde el request y delegar la operacion al servicio de citas.
 
+## Endpoint de consulta por ID
+
+### GET /api/citas/{citaId}
+
+Ruta encargada de obtener la informacion completa de una cita existenten.
+
+Seguridad:
+
+- Requiere token JWT valido.
+- Requiere rol `ADMIN`, `RECEPCIONISTA`, `VETERINARIO` o `CLIENTE`.
+
+Parametros de ruta:
+
+- `citaId`: UUID de la cita.
+
+Responsabilidades por archivo:
+
+- `citas.controller.ts`: expone la ruta HTTP y delega la operacion al servicio.
+- `citas.service.ts`: aplica reglas de alcance por rol y consulta la cita con sus relaciones.
+
+El controlador no contiene reglas de negocio. Su responsabilidad se limita a recibir el ID validado, obtener el usuario autenticado desde el request y delegar la operacion al servicio de citas.
+
+## Endpoint de finalizacion
+
+### PATCH /api/citas/{citaId}/finalizar
+
+Ruta encargada de marcar una cita confirmada como finalizada.
+
+Seguridad:
+
+- Requiere token JWT valido.
+- Requiere rol `VETERINARIO`.
+
+Parametros de ruta:
+
+- `citaId`: UUID de la cita.
+
+Responsabilidades por archivo:
+
+- `citas.controller.ts`: expone la ruta HTTP y delega la operacion al servicio.
+- `citas.service.ts`: valida que la cita pertenezca al veterinario autenticado, que exista y que este en estado `CONFIRMADA`, y luego actualiza el estado.
+
+El controlador no contiene reglas de negocio. Su responsabilidad se limita a recibir el ID validado, obtener el usuario autenticado desde el request y delegar la operacion al servicio de citas.
+
 ## Endpoint de agendamiento
 
 ### POST /api/citas
@@ -503,6 +547,16 @@ El servicio de citas ejecuta las siguientes validaciones y operaciones para `POS
 10. Envia el correo de confirmacion al cliente.
 11. Devuelve la cita confirmada con mascota, veterinario, servicios, monto total y pago.
 
+## Flujo de finalizacion de cita
+
+El servicio de citas ejecuta las siguientes validaciones y operaciones para `PATCH /api/citas/{citaId}/finalizar`:
+
+1. Valida que el veterinario autenticado sea el asignado a la cita.
+2. Verifica que la cita exista y pueda obtenerse con las relaciones necesarias.
+3. Valida que la cita este en estado `CONFIRMADA`.
+4. Actualiza el estado de la cita a `FINALIZADA`.
+5. Devuelve la cita actualizada en el mismo formato de respuesta del modulo.
+
 Errores de negocio principales:
 
 - `PAGO_OBLIGATORIO`
@@ -512,3 +566,5 @@ Errores de negocio principales:
 - `VETERINARIO_NO_DISPONIBLE`
 - `SERVICIOS_INVALIDOS`
 - `HORARIO_OCUPADO`
+- `CITA_NO_ENCONTRADA`
+- `CITA_NO_FINALIZABLE`
