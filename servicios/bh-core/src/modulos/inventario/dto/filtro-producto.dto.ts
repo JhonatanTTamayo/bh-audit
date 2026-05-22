@@ -1,8 +1,4 @@
-import {
-  IsEnum,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 import { TipoProductoDto } from './crear-producto.dto';
 
@@ -13,7 +9,10 @@ export class FiltroProductoDto {
   nombre?: string;
 
   @IsOptional()
-  @IsEnum(TipoProductoDto)
+  @IsEnum(TipoProductoDto, {
+    message:
+      'El tipo debe ser MEDICAMENTO, VACUNA o INSUMO_QUIRURGICO',
+  })
   tipo?: TipoProductoDto;
 
 }

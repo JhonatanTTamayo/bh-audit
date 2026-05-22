@@ -1,6 +1,6 @@
 import {
-  BadRequestException,
-  NotFoundException,
+    BadRequestException,
+    NotFoundException,
 } from '@nestjs/common';
 
 import { Injectable } from '@nestjs/common';
@@ -121,12 +121,20 @@ export class InventarioService {
 
     }
 
-    async obtenerStockBajo() {
+    async obtenerStockBajo(
+        filtros?: FiltroProductoDto,
+    ) {
 
         const productos =
             await this.prisma.producto.findMany({
                 where: {
                     activo: true,
+
+                    tipo: filtros?.tipo,
+                },
+
+                orderBy: {
+                    stock: 'asc',
                 },
             });
 
@@ -139,6 +147,7 @@ export class InventarioService {
 
     async obtenerProximosAVencer(
         dias = 30,
+        filtros?: FiltroProductoDto,
     ) {
 
         const fechaLimite = new Date();
@@ -151,9 +160,15 @@ export class InventarioService {
             where: {
                 activo: true,
 
+                tipo: filtros?.tipo,
+
                 fechaVencimiento: {
                     lte: fechaLimite,
                 },
+            },
+
+            orderBy: {
+                fechaVencimiento: 'asc',
             },
         });
 
@@ -185,6 +200,33 @@ export class InventarioService {
                 stock: nuevoStock,
             },
         });
+
+    }
+
+    async obtenerResumen() {
+
+        const totalProductos =
+            await this.prisma.producto.count({
+                where: {
+                    activo: true,
+                },
+            });
+
+        const productosStockBajo =
+            (
+                await this.obtenerStockBajo()
+            ).length;
+
+        const productosProximosVencer =
+            (
+                await this.obtenerProximosAVencer()
+            ).length;
+
+        return {
+            totalProductos,
+            productosStockBajo,
+            productosProximosVencer,
+        };
 
     }
 
