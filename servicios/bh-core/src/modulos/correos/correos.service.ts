@@ -1,4 +1,4 @@
-import {Injectable,InternalServerErrorException,Logger,} from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
@@ -33,7 +33,6 @@ export class CorreosService {
    *
    * @param configService Servicio de configuración de NestJS.
    */
-
   constructor(private readonly configService: ConfigService) {
     const host = this.configService.get<string>('MAIL_HOST');
     const port = Number(this.configService.get<string>('MAIL_PORT') ?? 587);
@@ -71,7 +70,7 @@ export class CorreosService {
     });
   }
 
-   /**
+  /**
    * Envía un código de verificación al correo del usuario registrado.
    *
    * Este método se utiliza durante el proceso de registro de usuario.
@@ -94,7 +93,7 @@ export class CorreosService {
     );
   }
 
-   /**
+  /**
    * Envía un correo de confirmación cuando una cita es agendada.
    *
    * @param destinatario Correo electrónico del usuario.
