@@ -1,4 +1,8 @@
-import { ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  UnprocessableEntityException,
+  ValidationPipe,
+} from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
@@ -44,6 +48,42 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: (validationErrors) => {
+        const hasPagoError = (errors: any[]): boolean =>
+          errors.some(
+            (error) =>
+              error.property === 'pago' ||
+              (error.children?.length > 0 && hasPagoError(error.children)),
+          );
+
+        const flattenErrors = (errors: any[], parent = ''): string[] =>
+          errors.flatMap((error) => {
+            const path = parent ? `${parent}.${error.property}` : error.property;
+            const messages = error.constraints
+              ? Object.values(error.constraints)
+              : [];
+            return [
+              ...messages.map((message) => `${path}: ${message}`),
+              ...flattenErrors(error.children || [], path),
+            ];
+          });
+
+        const detalles = flattenErrors(validationErrors);
+
+        if (hasPagoError(validationErrors)) {
+          return new UnprocessableEntityException({
+            codigo: 'PAGO_INVALIDO',
+            mensaje: 'La información de pago no es válida.',
+            detalles,
+          });
+        }
+
+        return new BadRequestException({
+          codigo: 'VALIDACION_INVALIDA',
+          mensaje: 'La petición contiene datos inválidos.',
+          detalles,
+        });
+      },
     }),
   );
 
