@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-   url= env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 /// Representa a los usuarios registrados dentro del sistema.
@@ -73,6 +73,34 @@ model CodigoVerificacion {
   @@map("codigos_verificacion")
 }
 
+/// Representa los productos manejados por la clínica:
+/// medicamentos, vacunas e insumos quirúrgicos.
+
+model Producto {
+
+  id String @id @default(uuid())
+
+  nombre String
+
+  tipo TipoProducto
+
+  stock Int
+
+  stockMinimo Int @map("stock_minimo")
+
+  precio Decimal @db.Decimal(10,2)
+
+  fechaVencimiento DateTime @map("fecha_vencimiento")
+
+  activo Boolean @default(true)
+
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("productos")
+}
+
 /// Define los posibles estados de una cuenta de usuario.
 
 enum EstadoUsuario {
@@ -81,4 +109,12 @@ enum EstadoUsuario {
   ACTIVO
   SUSPENDIDO
   RECHAZADO
+}
+
+/// Define los tipos de productos que maneja la clínica.
+
+enum TipoProducto {
+  MEDICAMENTO
+  VACUNA
+  INSUMO_QUIRURGICO
 }
