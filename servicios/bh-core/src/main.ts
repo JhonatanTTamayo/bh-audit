@@ -21,7 +21,7 @@ async function bootstrap() {
    * /api/roles
    */
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('bh-core/v1');
 
   /**
    * Habilita CORS para permitir comunicación con clientes externos.

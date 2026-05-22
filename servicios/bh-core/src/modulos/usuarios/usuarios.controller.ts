@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  Patch,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import {Body,Controller,Get, Param,ParseUUIDPipe,Patch,Post,Query,UseGuards,} from '@nestjs/common';
 
 import { Roles } from '../autenticacion/decoradores/roles.decorador';
 import { JwtAuthGuard } from '../autenticacion/guards/jwt-auth.guard';
@@ -22,7 +12,7 @@ import { RechazarCuentaDto } from './dto/rechazar-cuenta.dto';
  * Controlador encargado de exponer endpoints administrativos
  * relacionados con la gestión de usuarios.
  */
-@Controller('usuarios')
+@Controller('admin/usuarios')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class UsuariosController {
@@ -32,9 +22,9 @@ export class UsuariosController {
      * Lista las cuentas de recepcionistas y veterinarios pendientes de aprobación.
      *
      * Ruta:
-     * GET /api/usuarios/pendientes-aprobacion
+     * GET  /bh-core/v1/admin/usuarios/pendientes
      */
-    @Get('pendientes-aprobacion')
+    @Get('pendientes')
     listarCuentasPendientesAprobacion() {
         return this.usuariosService.listarCuentasPendientesAprobacion();
     }
@@ -43,7 +33,7 @@ export class UsuariosController {
      * Aprueba una cuenta pendiente de aprobación.
      *
      * Ruta:
-     * PATCH /api/usuarios/:usuarioId/aprobar
+     * PATCH  /bh-core/v1/admin/usuarios/:usuarioId/aprobar
      */
     @Patch(':usuarioId/aprobar')
     aprobarCuenta(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
@@ -54,7 +44,7 @@ export class UsuariosController {
      * Rechaza una cuenta pendiente de aprobación.
      *
      * Ruta:
-     * PATCH /api/usuarios/:usuarioId/rechazar
+     * PATCH  /bh-core/v1/admin/usuarios/:usuarioId/rechazar
      */
     @Patch(':usuarioId/rechazar')
     rechazarCuenta(@Param('usuarioId', ParseUUIDPipe)usuarioId:string,
@@ -66,7 +56,7 @@ export class UsuariosController {
      * Suspende una cuenta de usuario existente.
      *
      * Ruta:
-     * PATCH /api/usuarios/:usuarioId/suspender
+     * PATCH  /bh-core/v1/admin/usuarios/:usuarioId/suspender
      */
     @Patch(':usuarioId/suspender')
     suspenderCuenta(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
@@ -77,7 +67,7 @@ export class UsuariosController {
      * Lista los usuarios registrados aplicando filtros opcionales por rol y estado.
      *
      * Ruta:
-     * GET /api/usuarios
+     * GET  /bh-core/v1/admin/usuarios
      */
     @Get()
     listarUsuarios(@Query() filtros: FiltroUsuariosDto) {
@@ -89,7 +79,7 @@ export class UsuariosController {
      * una nueva cuenta de administrador.
      *
      * Ruta:
-     * POST /api/usuarios/administradores
+     * POST  /bh-core/v1/admin/usuarios/administradores
      */
     @Post('administradores')
     crearAdministrador(

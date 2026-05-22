@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import {BadRequestException,ConflictException,Injectable,NotFoundException,} from '@nestjs/common';
 import { EstadoUsuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
