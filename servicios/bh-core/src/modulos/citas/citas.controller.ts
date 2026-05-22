@@ -18,6 +18,7 @@ import { RequestConUsuario } from '../autenticacion/interfaces/request-con-usuar
 import { CitasService } from './citas.service';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { FiltroCitasDto } from './dto/filtro-citas.dto';
+import { MotivoRequestDto } from './dto/motivo-request.dto';
 
 /**
  * Controlador encargado de exponer endpoints relacionados con citas.
@@ -70,6 +71,22 @@ export class CitasController {
     @Req() request: RequestConUsuario,
   ) {
     return this.citasService.finalizarCita(citaId, request.usuario);
+  }
+
+  /**
+   * Cancela una cita y registra el motivo.
+   *
+   * Ruta:
+   * PATCH /api/citas/:citaId/cancelar
+   */
+  @Patch(':citaId/cancelar')
+  @Roles('RECEPCIONISTA', 'ADMIN')
+  cancelarCita(
+    @Param('citaId', new ParseUUIDPipe()) citaId: string,
+    @Body() motivo: MotivoRequestDto,
+    @Req() request: RequestConUsuario,
+  ) {
+    return this.citasService.cancelarCita(citaId, motivo, request.usuario);
   }
 
   /**

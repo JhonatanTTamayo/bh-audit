@@ -492,6 +492,33 @@ Responsabilidades por archivo:
 
 El controlador no contiene reglas de negocio. Su responsabilidad se limita a recibir el ID validado, obtener el usuario autenticado desde el request y delegar la operacion al servicio de citas.
 
+## Endpoint de cancelación
+
+### PATCH /api/citas/{citaId}/cancelar
+
+Ruta encargada de cancelar una cita que aun no ha sido atendida y registrar el motivo de cancelación.
+
+Seguridad:
+
+- Requiere token JWT valido.
+- Requiere rol `RECEPCIONISTA` o `ADMIN`.
+
+Parametros de ruta:
+
+- `citaId`: UUID de la cita.
+
+Cuerpo de la petición:
+
+- `motivo`: texto obligatorio que describe la justificación de la cancelación.
+
+Responsabilidades por archivo:
+
+- `citas.controller.ts`: expone la ruta HTTP, valida `citaId` y `MotivoRequestDto`, y delega la operación al servicio.
+- `citas.service.ts`: valida que la cita exista, que no haya sido atendida, y actualiza el estado y el motivo de cancelación.
+- `motivo-request.dto.ts`: valida la estructura y longitud del motivo enviado.
+
+El controlador no contiene reglas de negocio. Su responsabilidad se limita a recibir el ID y el DTO validados, obtener el usuario autenticado desde el request y delegar la operación al servicio de citas.
+
 ## Endpoint de agendamiento
 
 ### POST /api/citas
@@ -558,6 +585,30 @@ El servicio de citas ejecuta las siguientes validaciones y operaciones para `PAT
 5. Devuelve la cita actualizada en el mismo formato de respuesta del modulo.
 
 Errores de negocio principales:
+
+- `CITA_NO_ENCONTRADA`
+- `CITA_NO_FINALIZABLE`
+
+## Flujo de cancelacion de cita
+
+El servicio de citas ejecuta las siguientes validaciones y operaciones para `PATCH /api/citas/{citaId}/cancelar`:
+
+1. Verifica que la cita exista.
+2. Valida que la cita no este en estado `FINALIZADA` ni `CANCELADA`.
+3. Actualiza el estado de la cita a `CANCELADA`.
+4. Almacena el texto de `motivoCancelacion` en la cita.
+5. Devuelve la cita actualizada en el mismo formato de respuesta del modulo.
+
+Errores de negocio principales:
+
+- `CITA_NO_ENCONTRADA`
+- `CITA_NO_CANCELABLE`
+
+Errores de seguridad y autorizacion:
+
+- `ACCESO_DENEGADO` (rol no permitido)
+- `UNAUTHORIZED` (token faltante o invalido)
+
 
 - `PAGO_OBLIGATORIO`
 - `SERVICIOS_DUPLICADOS`

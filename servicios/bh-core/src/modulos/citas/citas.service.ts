@@ -132,6 +132,48 @@ export class CitasService {
   }
 
   /**
+   * Cancela una cita y almacena el motivo de cancelación.
+   */
+  async cancelarCita(
+    citaId: string,
+    motivoRequest: { motivo: string },
+    usuario: JwtPayload,
+  ) {
+    const cita = await this.prisma.cita.findUnique({
+      where: { id: citaId },
+      include: this.incluirRelacionesCita(),
+    });
+
+    if (!cita) {
+      throw new NotFoundException({
+        codigo: 'CITA_NO_ENCONTRADA',
+        mensaje: 'La cita solicitada no existe.',
+      });
+    }
+
+    if (
+      cita.estado === EstadoCita.FINALIZADA ||
+      cita.estado === EstadoCita.CANCELADA
+    ) {
+      throw new BadRequestException({
+        codigo: 'CITA_NO_CANCELABLE',
+        mensaje: 'La cita ya fue atendida o no puede cancelarse.',
+      });
+    }
+
+    const citaActualizada = await this.prisma.cita.update({
+      where: { id: cita.id },
+      data: {
+        estado: EstadoCita.CANCELADA,
+        motivoCancelacion: motivoRequest.motivo,
+      },
+      include: this.incluirRelacionesCita(),
+    });
+
+    return this.formatearCita(citaActualizada);
+  }
+
+  /**
    * Agenda una cita con pago obligatorio.
    */
   async crearCita(crearCitaDto: CrearCitaDto, usuario: JwtPayload) {
