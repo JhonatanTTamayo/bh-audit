@@ -1,9 +1,11 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -13,6 +15,7 @@ import { JwtAuthGuard } from '../autenticacion/guards/jwt-auth.guard';
 import { RolesGuard } from '../autenticacion/guards/roles.guard';
 import { UsuariosService } from './usuarios.service';
 import { FiltroUsuariosDto } from './dto/filtro-usuarios.dto';
+import { CreateAdminDto } from './dto/crear-admin';
 
 /**
  * Controlador encargado de exponer endpoints administrativos
@@ -80,8 +83,18 @@ export class UsuariosController {
     return this.usuariosService.listarUsuarios(filtros);
     }
 
-
-
+    /**
+     * Permite a un administrador autenticado crear
+     * una nueva cuenta de administrador.
+     *
+     * Ruta:
+     * POST /api/usuarios/administradores
+     */
+    @Post('administradores')
+    crearAdministrador(
+    @Body() createAdminDto: CreateAdminDto,) {
+        return this.usuariosService.crearAdministrador(createAdminDto,);
+    }
 
 
 }
