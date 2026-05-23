@@ -71,6 +71,47 @@ export class CitasService {
   }
 
   /**
+   * Consulta horarios disponibles para un veterinario en una fecha.
+   * Regla simple por defecto: franjas horarias por hora entre 08:00 y 17:00.
+   */
+  async consultarDisponibilidad(
+    query: { veterinarioId: string; fecha: string },
+    usuario: JwtPayload,
+  ) {
+    const fechaCita = this.construirFechaCita(query.fecha);
+
+    const citas = await this.prisma.cita.findMany({
+      where: {
+        veterinarioId: query.veterinarioId,
+        fecha: fechaCita,
+        estado: EstadoCita.CONFIRMADA,
+      },
+      select: {
+        hora: true,
+      },
+    });
+
+    const ocupadas = new Set(citas.map((c) => c.hora));
+
+    const horarios: string[] = [];
+    const apertura = 8;
+    const cierre = 17;
+
+    for (let h = apertura; h <= cierre; h++) {
+      const hora = `${h.toString().padStart(2, '0')}:00`;
+      if (!ocupadas.has(hora)) {
+        horarios.push(hora);
+      }
+    }
+
+    return {
+      fecha: query.fecha,
+      veterinarioId: query.veterinarioId,
+      horariosDisponibles: horarios,
+    };
+  }
+
+  /**
    * Obtiene una cita por su ID aplicando reglas de acceso por rol.
    */
   async obtenerCita(citaId: string, usuario: JwtPayload) {
