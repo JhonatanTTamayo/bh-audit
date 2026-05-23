@@ -15,20 +15,14 @@ model Usuario {
   nombreCompleto   String          @map("nombre_completo")
   correo           String          @unique
   telefono         String?
-  contrasenaHash   String        @map("contrasena_hash")
-  estado           EstadoUsuario @default(PENDIENTE_VERIFICACION)
-  correoVerificado Boolean       @default(false) @map("correo_verificado")
-  motivoRechazo    String?       @map("motivo_rechazo")
-
-  rolId String @map("rol_id")
-  rol   Rol    @relation(fields: [rolId], references: [id])
-
+  contrasenaHash   String          @map("contrasena_hash")
+  estado           EstadoUsuario   @default(PENDIENTE_VERIFICACION)
+  correoVerificado Boolean         @default(false) @map("correo_verificado")
+  rolId            String          @map("rol_id")
+  rol              Rol             @relation(fields: [rolId], references: [id])
   codigosVerificacion CodigoVerificacion[]
-  mascotas            Mascota[]            @relation("ClienteMascotas")
-  citasVeterinario    Cita[]               @relation("VeterinarioCitas")
-
-  creadoEn      DateTime @default(now()) @map("creado_en")
-  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+  creadoEn         DateTime        @default(now()) @map("creado_en")
+  actualizadoEn    DateTime        @updatedAt @map("actualizado_en")
 
   @@map("usuarios")
 }
@@ -58,151 +52,6 @@ model CodigoVerificacion {
   @@map("codigos_verificacion")
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-/// Representa una mascota registrada para un cliente del sistema.
-///
-/// Cada mascota pertenece a un usuario con rol cliente y puede tener
-/// multiples citas asociadas.
-
-model Mascota {
-  id      String        @id @default(uuid())
-  nombre  String
-  especie String
-  raza    String?
-  edad    Int?
-  peso    Decimal?      @db.Decimal(10, 2)
-  estado  EstadoMascota @default(ACTIVA)
-
-  clienteId String  @map("cliente_id")
-  cliente   Usuario @relation("ClienteMascotas", fields: [clienteId], references: [id])
-
-  citas Cita[]
-
-  creadoEn      DateTime @default(now()) @map("creado_en")
-  actualizadoEn DateTime @updatedAt @map("actualizado_en")
-
-  @@index([clienteId])
-  @@map("mascotas")
-}
-
-/// Representa un servicio ofrecido por la clinica veterinaria.
-///
-/// Los servicios activos pueden ser seleccionados al agendar una cita
-/// y su precio se usa para calcular el monto total.
-
-model Servicio {
-  id          String  @id @default(uuid())
-  nombre      String
-  descripcion String?
-  precio      Decimal @db.Decimal(10, 2)
-  activo      Boolean @default(true)
-
-  citas CitaServicio[]
-
-  creadoEn      DateTime @default(now()) @map("creado_en")
-  actualizadoEn DateTime @updatedAt @map("actualizado_en")
-
-  @@map("servicios")
-}
-
-/// Representa una cita agendada para una mascota con un veterinario.
-///
-/// La cita se crea confirmada solo cuando existe pago asociado.
-
-model Cita {
-  id                String     @id @default(uuid())
-  fecha             DateTime   @db.Date
-  hora              String     @db.VarChar(5)
-  estado            EstadoCita @default(CONFIRMADA)
-  montoTotal        Decimal    @map("monto_total") @db.Decimal(10, 2)
-  motivoCancelacion String?    @map("motivo_cancelacion") @db.VarChar(500)
-
-  mascotaId String  @map("mascota_id")
-  mascota   Mascota @relation(fields: [mascotaId], references: [id])
-
-  veterinarioId String  @map("veterinario_id")
-  veterinario   Usuario @relation("VeterinarioCitas", fields: [veterinarioId], references: [id])
-
-  servicios CitaServicio[]
-  pago      Pago?
-
-  creadoEn      DateTime @default(now()) @map("creado_en")
-  actualizadoEn DateTime @updatedAt @map("actualizado_en")
-
-  @@index([mascotaId])
-  @@index([veterinarioId, fecha, hora])
-  @@map("citas")
-}
-
-/// Relaciona las citas con los servicios seleccionados.
-///
-/// Guarda el precio aplicado para conservar el valor historico aunque
-/// el precio del servicio cambie posteriormente.
-
-model CitaServicio {
-  citaId String @map("cita_id")
-  cita   Cita   @relation(fields: [citaId], references: [id])
-
-  servicioId String   @map("servicio_id")
-  servicio   Servicio @relation(fields: [servicioId], references: [id])
-
-  precioAplicado Decimal @map("precio_aplicado") @db.Decimal(10, 2)
-
-  @@id([citaId, servicioId])
-  @@index([servicioId])
-  @@map("citas_servicios")
-}
-
-/// Representa el pago obligatorio asociado a una cita confirmada.
-
-model Pago {
-  id         String     @id @default(uuid())
-  metodo     MetodoPago
-  referencia String?
-  monto      Decimal    @db.Decimal(10, 2)
-  fechaPago  DateTime   @default(now()) @map("fecha_pago")
-
-  citaId String @unique @map("cita_id")
-  cita   Cita   @relation(fields: [citaId], references: [id])
-
-  creadoEn DateTime @default(now()) @map("creado_en")
-
-  @@map("pagos")
-=======
-/// Representa los productos manejados por la clínica:
-/// medicamentos, vacunas e insumos quirúrgicos.
-
-model Producto {
-
-  id String @id @default(uuid())
-
-  nombre String
-
-  tipo TipoProducto
-
-  stock Int
-
-  stockMinimo Int @map("stock_minimo")
-
-  precio Decimal @db.Decimal(10,2)
-
-  fechaVencimiento DateTime @map("fecha_vencimiento")
-
-  activo Boolean @default(true)
-
-  creadoEn DateTime @default(now()) @map("creado_en")
-
-  actualizadoEn DateTime @updatedAt @map("actualizado_en")
-
-  @@map("productos")
->>>>>>> 3bbe501a5df3ead9264bc39d0416fed3257a53a3
-}
-
-/// Define los posibles estados de una cuenta de usuario.
-
-=======
->>>>>>> origin/feature/SCRUM-50-generacion-factura
 enum EstadoUsuario {
   PENDIENTE_VERIFICACION
   PENDIENTE_APROBACION
@@ -211,41 +60,6 @@ enum EstadoUsuario {
   RECHAZADO
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-/// Define los posibles estados de una mascota.
-
-enum EstadoMascota {
-  ACTIVA
-  HOSPITALIZADA
-  FALLECIDA
-}
-
-/// Define los posibles estados de una cita.
-
-enum EstadoCita {
-  CONFIRMADA
-  FINALIZADA
-  CANCELADA
-}
-
-/// Define los metodos de pago permitidos al agendar una cita.
-
-enum MetodoPago {
-  EFECTIVO
-  TARJETA
-  TRANSFERENCIA
-}
-=======
-/// Define los tipos de productos que maneja la clínica.
-
-enum TipoProducto {
-  MEDICAMENTO
-  VACUNA
-  INSUMO_QUIRURGICO
-}
->>>>>>> 3bbe501a5df3ead9264bc39d0416fed3257a53a3
-=======
 // ==========================================
 // MODELOS PARA FACTURACIÓN Y ATENCIONES
 // ==========================================
@@ -299,4 +113,3 @@ model Factura {
 
   @@map("facturas")
 }
->>>>>>> origin/feature/SCRUM-50-generacion-factura
