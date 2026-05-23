@@ -26,7 +26,7 @@ export class ServiciosService {
 
     return servicios.map((servicio) => this.formatearServicio(servicio));
   }
-
+o
   private formatearServicio(servicio: {
     id: string;
     nombre: string;
