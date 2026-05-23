@@ -9,6 +9,7 @@ import { CitasModule } from './modulos/citas/citas.module';
 import { CorreosModule } from './modulos/correos/correos.module';
 import { RolesModule } from './modulos/roles/roles.module';
 import { UsuariosModule } from './modulos/usuarios/usuarios.module';
+import { InventarioModule } from './modulos/inventario/inventario.module';
 
 /**
  * Modulo raíz del microservicio bh-core
