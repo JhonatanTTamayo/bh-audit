@@ -1,6 +1,6 @@
 import {
-  BadRequestException,
-  NotFoundException,
+    BadRequestException,
+    NotFoundException,
 } from '@nestjs/common';
 
 import { Injectable } from '@nestjs/common';
@@ -183,6 +183,45 @@ export class InventarioService {
 
             data: {
                 stock: nuevoStock,
+            },
+        });
+
+    }
+
+    async descontarStock(
+        id: string,
+        cantidad: number,
+    ) {
+
+        const producto =
+            await this.obtenerPorId(id);
+
+        // VALIDAR SI ESTÁ VENCIDO
+        if (
+            producto.fechaVencimiento <
+            new Date()
+        ) {
+            throw new BadRequestException(
+                'El producto está vencido',
+            );
+        }
+
+        // VALIDAR STOCK
+        if (producto.stock < cantidad) {
+            throw new BadRequestException(
+                'Stock insuficiente',
+            );
+        }
+
+        return this.prisma.producto.update({
+            where: {
+                id,
+            },
+
+            data: {
+                stock: {
+                    decrement: cantidad,
+                },
             },
         });
 
