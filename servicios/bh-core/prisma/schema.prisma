@@ -75,6 +75,7 @@ model CodigoVerificacion {
   @@map("codigos_verificacion")
 }
 
+<<<<<<< HEAD
 /// Representa una mascota registrada para un cliente del sistema.
 ///
 /// Cada mascota pertenece a un usuario con rol cliente y puede tener
@@ -184,6 +185,34 @@ model Pago {
   creadoEn DateTime @default(now()) @map("creado_en")
 
   @@map("pagos")
+=======
+/// Representa los productos manejados por la clínica:
+/// medicamentos, vacunas e insumos quirúrgicos.
+
+model Producto {
+
+  id String @id @default(uuid())
+
+  nombre String
+
+  tipo TipoProducto
+
+  stock Int
+
+  stockMinimo Int @map("stock_minimo")
+
+  precio Decimal @db.Decimal(10,2)
+
+  fechaVencimiento DateTime @map("fecha_vencimiento")
+
+  activo Boolean @default(true)
+
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("productos")
+>>>>>>> 3bbe501a5df3ead9264bc39d0416fed3257a53a3
 }
 
 /// Define los posibles estados de una cuenta de usuario.
@@ -196,6 +225,7 @@ enum EstadoUsuario {
   RECHAZADO
 }
 
+<<<<<<< HEAD
 /// Define los posibles estados de una mascota.
 
 enum EstadoMascota {
@@ -219,3 +249,12 @@ enum MetodoPago {
   TARJETA
   TRANSFERENCIA
 }
+=======
+/// Define los tipos de productos que maneja la clínica.
+
+enum TipoProducto {
+  MEDICAMENTO
+  VACUNA
+  INSUMO_QUIRURGICO
+}
+>>>>>>> 3bbe501a5df3ead9264bc39d0416fed3257a53a3
