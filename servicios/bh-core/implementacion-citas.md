@@ -604,6 +604,40 @@ Errores de negocio principales:
 - `CITA_NO_ENCONTRADA`
 - `CITA_NO_CANCELABLE`
 
+## Endpoint de disponibilidad
+
+### GET /api/citas/disponibilidad
+
+Ruta encargada de consultar los horarios disponibles de un veterinario en una fecha.
+
+Seguridad:
+
+- Requiere token JWT valido.
+- Requiere rol `RECEPCIONISTA` o `CLIENTE`.
+
+Parametros query:
+
+- `veterinarioId` (required): UUID del veterinario.
+- `fecha` (required): Fecha a consultar en formato `YYYY-MM-DD`.
+
+Respuesta:
+
+- `fecha`: la fecha consultada.
+- `veterinarioId`: id del veterinario consultado.
+- `horariosDisponibles`: arreglo de strings con horarios en formato `HH:mm`.
+
+Reglas de calculo (implementacion actual):
+
+- Se considera una regla por defecto de franjas horarias por hora entre `08:00` y `17:00`.
+- Se consultan las citas con estado `CONFIRMADA` para el `veterinarioId` y la `fecha` indicada y se excluyen esas horas del conjunto de horarios disponibles.
+- Esta regla es configurable y puede reemplazarse por una politica basada en la jornada laboral del veterinario o bloques de tiempo diferentes.
+
+Archivos implicados:
+
+- `citas.controller.ts`: expone la ruta `GET /disponibilidad` y valida query.
+- `citas.service.ts`: implementa `consultarDisponibilidad` y calcula franjas disponibles.
+- `dto/disponibilidad.dto.ts`: valida los parametros `veterinarioId` y `fecha`.
+
 Errores de seguridad y autorizacion:
 
 - `ACCESO_DENEGADO` (rol no permitido)
