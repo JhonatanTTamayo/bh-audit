@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-
 import { BasedatosModule } from '../../basedatos/basedatos.module';
 import { HistorialMedicoController } from './historial-medico.controller';
 import { HistorialMedicoService } from './historial-medico.service';

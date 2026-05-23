@@ -12,15 +12,15 @@ import {
 export class CrearVacunaDto {
   @IsString()
   @IsNotEmpty()
-  nombre: string;
+  nombre!: string;
 
   @IsDateString()
   @IsNotEmpty()
-  fechaAplicacion: string;
+  fechaAplicacion!: string;
 
   @IsDateString()
   @IsNotEmpty()
-  fechaProximaDosis: string;
+  fechaProximaDosis!: string;
 
   @IsOptional()
   @IsUUID()

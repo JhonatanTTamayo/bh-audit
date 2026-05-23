@@ -17,15 +17,15 @@ import {
 export class MedicamentoPrescritoUpdateDto {
   @IsUUID()
   @IsNotEmpty()
-  productoId: string;
+  productoId!: string;
 
   @IsString()
   @IsNotEmpty()
-  dosis: string;
+  dosis!: string;
 
   @IsString()
   @IsNotEmpty()
-  duracion: string;
+  duracion!: string;
 }
 
 /**
@@ -34,19 +34,19 @@ export class MedicamentoPrescritoUpdateDto {
 export class ActualizarHistorialMedicoDto {
   @IsString()
   @IsNotEmpty()
-  motivoVisita: string;
+  motivoVisita!: string;
 
   @IsString()
   @IsNotEmpty()
-  diagnostico: string;
+  diagnostico!: string;
 
   @IsString()
   @IsNotEmpty()
-  tratamiento: string;
+  tratamiento!: string;
 
   @IsNumber()
   @Min(0)
-  peso: number;
+  peso!: number;
 
   @IsOptional()
   @IsDateString()
