@@ -8,9 +8,12 @@ import { ServiciosController } from './servicios.controller';
 import { ServiciosService } from './servicios.service';
 
 /**
- * Modulo del catalogo de servicios.
+ * Módulo del catálogo de servicios.
  *
- * Expone la consulta del catalogo con control de visibilidad por rol.
+ * - Importa el módulo de base de datos y el módulo JWT para autenticación.
+ * - Expone el controlador de servicios con sus endpoints protegidos.
+ * - Provee el servicio de negocio para gestionar el catálogo.
+ * - Exporta el servicio para que pueda ser usado en otros módulos.
  */
 @Module({
   imports: [
