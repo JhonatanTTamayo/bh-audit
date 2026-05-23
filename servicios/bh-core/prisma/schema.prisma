@@ -29,6 +29,7 @@ model Usuario {
   mascotas            Mascota[]            @relation("ClienteMascotas")
   citasVeterinario    Cita[]               @relation("VeterinarioCitas")
   historialComoVeterinario HistorialMedico[] @relation("VeterinarioHistorial")
+  vacunasAplicadas Vacuna[] @relation("VeterinarioVacunas")
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -95,9 +96,11 @@ model Mascota {
 
   citas Cita[]
   historialMedico HistorialMedico[]
+  vacunas Vacuna[] @relation("MascotaVacunas")
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
+  
 
   @@index([clienteId])
   @@map("mascotas")
@@ -276,4 +279,30 @@ model MedicamentoPrescrito {
 
   @@index([historialId])
   @@map("medicamentos_prescritos")
+}
+
+/// Representa una vacuna aplicada a una mascota dentro de su historial médico.
+///
+/// Registra el nombre, fecha de aplicación, próxima dosis y observaciones.
+/// Opcionalmente puede estar vinculada a un producto del inventario.
+
+model Vacuna {
+  id                 String   @id @default(uuid())
+  nombre             String
+  fechaAplicacion    DateTime @map("fecha_aplicacion") @db.Date
+  fechaProximaDosis  DateTime @map("fecha_proxima_dosis") @db.Date
+  observaciones      String?  @db.Text
+  productoId         String?  @map("producto_id")
+
+  mascotaId          String   @map("mascota_id")
+  mascota            Mascota  @relation("MascotaVacunas", fields: [mascotaId], references: [id])
+
+  veterinarioId      String   @map("veterinario_id")
+  veterinario        Usuario  @relation("VeterinarioVacunas", fields: [veterinarioId], references: [id])
+
+  creadoEn           DateTime @default(now()) @map("creado_en")
+
+  @@index([mascotaId])
+  @@index([veterinarioId])
+  @@map("vacunas")
 }
