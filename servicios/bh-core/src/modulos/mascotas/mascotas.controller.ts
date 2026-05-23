@@ -12,7 +12,7 @@ import { JwtAuthGuard } from '../autenticacion/guards/jwt-auth.guard';
 import { RolesGuard } from '../autenticacion/guards/roles.guard';
 import { Roles } from '../autenticacion/decoradores/roles.decorador';
 
-@Controller('mascotas')
+@Controller('clientes')
 export class MascotasController {
   constructor(private readonly mascotasService: MascotasService,) {}
 
@@ -22,7 +22,7 @@ export class MascotasController {
   * POST: bh-core/v1/clientes/:cliente/mascotas
   */
 
-  @Post('/clientes/:clienteId')
+  @Post(':clienteId/mascotas')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('RECEPCIONISTA')
   crearMascota(

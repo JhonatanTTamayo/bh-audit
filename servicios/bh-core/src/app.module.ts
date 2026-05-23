@@ -10,6 +10,8 @@ import { CorreosModule } from './modulos/correos/correos.module';
 import { RolesModule } from './modulos/roles/roles.module';
 import { UsuariosModule } from './modulos/usuarios/usuarios.module';
 import { MascotasModule } from './modulos/mascotas/mascotas.module';
+import { InventarioModule } from './modulos/inventario/inventario.module';
+import { HistorialMedicoModule } from './modulos/historial-medico/historial-medico.module';
 
 /**
  * Modulo raíz del microservicio bh-core
@@ -57,12 +59,13 @@ import { MascotasModule } from './modulos/mascotas/mascotas.module';
      * Módulo encargado del envío de correos electrónicos.
      */
     CorreosModule,
-
     CitasModule,
 
     MascotasModule,
+    InventarioModule,
+    HistorialMedicoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
