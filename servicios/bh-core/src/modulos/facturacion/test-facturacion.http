@@ -1,0 +1,16 @@
+### Crear una nueva factura (POST)
+POST http://localhost:3000/api/facturacion
+Content-Type: application/json
+
+{
+  "atencionId": "AQUÍ-VA-EL-ID-DE-TU-ATENCION",
+  "descuento": 0,
+  "metodoPago": "Efectivo",
+  "detalles": [
+    {
+      "concepto": "Consulta general",
+      "precioUnitario": 50000,
+      "cantidad": 1
+    }
+  ]
+}
