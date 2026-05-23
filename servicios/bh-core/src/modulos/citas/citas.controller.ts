@@ -8,8 +8,10 @@ import {
   ParseUUIDPipe,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 
 import { Roles } from '../autenticacion/decoradores/roles.decorador';
 import { JwtAuthGuard } from '../autenticacion/guards/jwt-auth.guard';
@@ -20,6 +22,8 @@ import { CrearCitaDto } from './dto/crear-cita.dto';
 import { FiltroCitasDto } from './dto/filtro-citas.dto';
 import { MotivoRequestDto } from './dto/motivo-request.dto';
 import { DisponibilidadQueryDto } from './dto/disponibilidad.dto';
+import { ReporteCitasDto } from './dto/reporte-citas.dto';
+import { PdfCitasHelper } from './pdf-citas.helper';
 
 /**
  * Controlador encargado de exponer endpoints relacionados con citas.
@@ -38,10 +42,42 @@ export class CitasController {
   @Get()
   @Roles('CLIENTE', 'VETERINARIO', 'RECEPCIONISTA', 'ADMIN')
   listarCitas(
-    @Query() filtros: FiltroCitasDto,
-    @Req() request: RequestConUsuario,
+      @Query() filtros: FiltroCitasDto,
+      @Req() request: RequestConUsuario,
   ) {
     return this.citasService.listarCitas(filtros, request.usuario);
+  }
+
+  /**
+   * Genera y descarga el reporte de citas por periodo en PDF.
+   *
+   * Ruta:
+   * GET /api/citas/reporte/pdf
+   */
+  @Get('reporte/pdf')
+  @Roles('ADMIN')
+  async descargarReportePdf(
+      @Query() filtros: ReporteCitasDto,
+      @Res() res: Response,
+  ) {
+    const citas = await this.citasService.obtenerCitasParaReporte(
+        filtros.fechaDesde,
+        filtros.fechaHasta,
+    );
+
+    const fechaGeneracion = new Date();
+    const nombreArchivo = `reporte-citas-${filtros.fechaDesde}-a-${filtros.fechaHasta}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${nombreArchivo}`);
+
+    PdfCitasHelper.generarReporteCitasPdf(
+        res,
+        citas,
+        filtros.fechaDesde,
+        filtros.fechaHasta,
+        fechaGeneracion,
+    );
   }
 
   /**
@@ -53,8 +89,8 @@ export class CitasController {
   @Get(':citaId')
   @Roles('CLIENTE', 'VETERINARIO', 'RECEPCIONISTA', 'ADMIN')
   obtenerCita(
-    @Param('citaId', new ParseUUIDPipe()) citaId: string,
-    @Req() request: RequestConUsuario,
+      @Param('citaId', new ParseUUIDPipe()) citaId: string,
+      @Req() request: RequestConUsuario,
   ) {
     return this.citasService.obtenerCita(citaId, request.usuario);
   }
@@ -68,8 +104,8 @@ export class CitasController {
   @Patch(':citaId/finalizar')
   @Roles('VETERINARIO')
   finalizarCita(
-    @Param('citaId', new ParseUUIDPipe()) citaId: string,
-    @Req() request: RequestConUsuario,
+      @Param('citaId', new ParseUUIDPipe()) citaId: string,
+      @Req() request: RequestConUsuario,
   ) {
     return this.citasService.finalizarCita(citaId, request.usuario);
   }
@@ -83,9 +119,9 @@ export class CitasController {
   @Patch(':citaId/cancelar')
   @Roles('RECEPCIONISTA', 'ADMIN')
   cancelarCita(
-    @Param('citaId', new ParseUUIDPipe()) citaId: string,
-    @Body() motivo: MotivoRequestDto,
-    @Req() request: RequestConUsuario,
+      @Param('citaId', new ParseUUIDPipe()) citaId: string,
+      @Body() motivo: MotivoRequestDto,
+      @Req() request: RequestConUsuario,
   ) {
     return this.citasService.cancelarCita(citaId, motivo, request.usuario);
   }
@@ -99,8 +135,8 @@ export class CitasController {
   @Get('disponibilidad')
   @Roles('RECEPCIONISTA', 'CLIENTE')
   disponibilidad(
-    @Query() query: DisponibilidadQueryDto,
-    @Req() request: RequestConUsuario,
+      @Query() query: DisponibilidadQueryDto,
+      @Req() request: RequestConUsuario,
   ) {
     return this.citasService.consultarDisponibilidad(query, request.usuario);
   }
@@ -114,8 +150,8 @@ export class CitasController {
   @Post()
   @Roles('RECEPCIONISTA', 'CLIENTE')
   crearCita(
-    @Body() crearCitaDto: CrearCitaDto,
-    @Req() request: RequestConUsuario,
+      @Body() crearCitaDto: CrearCitaDto,
+      @Req() request: RequestConUsuario,
   ) {
     return this.citasService.crearCita(crearCitaDto, request.usuario);
   }

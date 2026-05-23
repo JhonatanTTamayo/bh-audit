@@ -186,6 +186,27 @@ model Pago {
   @@map("pagos")
 }
 
+/// Representa un producto del inventario de la clinica veterinaria.
+///
+/// Incluye medicamentos, insumos y cualquier producto que requiera
+/// control de stock, precio y fecha de vencimiento.
+
+model Inventario {
+  id               Int       @id @default(autoincrement())
+  nombre           String
+  tipo             String
+  stock            Int
+  stockMinimo      Int       @map("stock_minimo")
+  precio           Decimal   @db.Decimal(10, 2)
+  fechaVencimiento DateTime? @map("fecha_vencimiento")
+  activo           Boolean   @default(true)
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("inventario")
+}
+
 /// Define los posibles estados de una cuenta de usuario.
 
 enum EstadoUsuario {

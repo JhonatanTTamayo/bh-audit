@@ -21,9 +21,9 @@ import { CorreosService } from '../correos/correos.service';
 @Injectable()
 export class CitasService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly correosService: CorreosService,
-    private readonly configService: ConfigService,
+      private readonly prisma: PrismaService,
+      private readonly correosService: CorreosService,
+      private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -75,8 +75,8 @@ export class CitasService {
    * Regla simple por defecto: franjas horarias por hora entre 08:00 y 17:00.
    */
   async consultarDisponibilidad(
-    query: { veterinarioId: string; fecha: string },
-    usuario: JwtPayload,
+      query: { veterinarioId: string; fecha: string },
+      usuario: JwtPayload,
   ) {
     const fechaCita = this.construirFechaCita(query.fecha);
 
@@ -157,7 +157,7 @@ export class CitasService {
       throw new BadRequestException({
         codigo: 'CITA_NO_FINALIZABLE',
         mensaje:
-          'Solo las citas confirmadas pueden marcarse como finalizadas.',
+            'Solo las citas confirmadas pueden marcarse como finalizadas.',
       });
     }
 
@@ -176,9 +176,9 @@ export class CitasService {
    * Cancela una cita y almacena el motivo de cancelación.
    */
   async cancelarCita(
-    citaId: string,
-    motivoRequest: { motivo: string },
-    usuario: JwtPayload,
+      citaId: string,
+      motivoRequest: { motivo: string },
+      usuario: JwtPayload,
   ) {
     const cita = await this.prisma.cita.findUnique({
       where: { id: citaId },
@@ -193,8 +193,8 @@ export class CitasService {
     }
 
     if (
-      cita.estado === EstadoCita.FINALIZADA ||
-      cita.estado === EstadoCita.CANCELADA
+        cita.estado === EstadoCita.FINALIZADA ||
+        cita.estado === EstadoCita.CANCELADA
     ) {
       throw new BadRequestException({
         codigo: 'CITA_NO_CANCELABLE',
@@ -273,9 +273,9 @@ export class CitasService {
     }
 
     if (
-      !veterinario ||
-      veterinario.rol.nombre !== 'VETERINARIO' ||
-      veterinario.estado !== EstadoUsuario.ACTIVO
+        !veterinario ||
+        veterinario.rol.nombre !== 'VETERINARIO' ||
+        veterinario.estado !== EstadoUsuario.ACTIVO
     ) {
       throw new NotFoundException({
         codigo: 'VETERINARIO_NO_DISPONIBLE',
@@ -347,6 +347,35 @@ export class CitasService {
     return this.formatearCita(cita);
   }
 
+  /**
+   * Obtiene las citas en un rango de fechas para generar el reporte PDF.
+   * Solo accesible por el administrador.
+   */
+  async obtenerCitasParaReporte(fechaDesde: string, fechaHasta: string) {
+    this.validarRangoFechas(fechaDesde, fechaHasta);
+
+    const citas = await this.prisma.cita.findMany({
+      where: {
+        fecha: {
+          gte: this.construirFechaCita(fechaDesde),
+          lte: this.construirFechaCita(fechaHasta),
+        },
+      },
+      include: this.incluirRelacionesCita(),
+      orderBy: [{ fecha: 'asc' }, { hora: 'asc' }],
+    });
+
+    return citas.map((cita) => ({
+      id: cita.id,
+      fecha: cita.fecha.toISOString().slice(0, 10),
+      hora: cita.hora,
+      estado: cita.estado,
+      cliente: cita.mascota.cliente.nombreCompleto,
+      mascota: cita.mascota.nombre,
+      veterinario: cita.veterinario.nombreCompleto,
+    }));
+  }
+
   private validarPagoObligatorio(crearCitaDto: CrearCitaDto) {
     if (!crearCitaDto.pago) {
       throw new UnprocessableEntityException({
@@ -388,8 +417,8 @@ export class CitasService {
   }
 
   private construirFiltrosListado(
-    filtros: FiltroCitasDto,
-    usuario: JwtPayload,
+      filtros: FiltroCitasDto,
+      usuario: JwtPayload,
   ): Prisma.CitaWhereInput {
     const where: Prisma.CitaWhereInput = {
       ...(filtros.veterinarioId && {
@@ -410,8 +439,8 @@ export class CitasService {
   }
 
   private construirFiltroFechas(
-    fechaDesde?: string,
-    fechaHasta?: string,
+      fechaDesde?: string,
+      fechaHasta?: string,
   ): Prisma.CitaWhereInput {
     if (!fechaDesde && !fechaHasta) {
       return {};
@@ -430,8 +459,8 @@ export class CitasService {
   }
 
   private aplicarAlcancePorRol(
-    where: Prisma.CitaWhereInput,
-    usuario: JwtPayload,
+      where: Prisma.CitaWhereInput,
+      usuario: JwtPayload,
   ) {
     if (usuario.rol === 'CLIENTE') {
       where.mascota = {
@@ -447,13 +476,13 @@ export class CitasService {
   }
 
   private calcularMontoTotal(
-    servicios: Array<{
-      precio: Prisma.Decimal;
-    }>,
+      servicios: Array<{
+        precio: Prisma.Decimal;
+      }>,
   ): Prisma.Decimal {
     return servicios.reduce(
-      (total, servicio) => total.plus(servicio.precio),
-      new Prisma.Decimal(0),
+        (total, servicio) => total.plus(servicio.precio),
+        new Prisma.Decimal(0),
     );
   }
 
@@ -479,31 +508,31 @@ export class CitasService {
   }
 
   private async enviarCorreoConfirmacion(
-    cita: Prisma.CitaGetPayload<{
-      include: ReturnType<CitasService['incluirRelacionesCita']>;
-    }>,
+      cita: Prisma.CitaGetPayload<{
+        include: ReturnType<CitasService['incluirRelacionesCita']>;
+      }>,
   ) {
     const direccionSede =
-      this.configService.get<string>('CLINIC_ADDRESS') ??
-      'Direccion de la sede principal';
+        this.configService.get<string>('CLINIC_ADDRESS') ??
+        'Direccion de la sede principal';
 
     await this.correosService.enviarConfirmacionCita(
-      cita.mascota.cliente.correo,
-      {
-        nombreCliente: cita.mascota.cliente.nombreCompleto,
-        nombreMascota: cita.mascota.nombre,
-        fecha: cita.fecha.toISOString().slice(0, 10),
-        hora: cita.hora,
-        nombreVeterinario: cita.veterinario.nombreCompleto,
-        direccion: direccionSede,
-      },
+        cita.mascota.cliente.correo,
+        {
+          nombreCliente: cita.mascota.cliente.nombreCompleto,
+          nombreMascota: cita.mascota.nombre,
+          fecha: cita.fecha.toISOString().slice(0, 10),
+          hora: cita.hora,
+          nombreVeterinario: cita.veterinario.nombreCompleto,
+          direccion: direccionSede,
+        },
     );
   }
 
   private formatearCita(
-    cita: Prisma.CitaGetPayload<{
-      include: ReturnType<CitasService['incluirRelacionesCita']>;
-    }>,
+      cita: Prisma.CitaGetPayload<{
+        include: ReturnType<CitasService['incluirRelacionesCita']>;
+      }>,
   ) {
     return {
       id: cita.id,
@@ -531,14 +560,14 @@ export class CitasService {
       })),
       montoTotal: cita.montoTotal.toNumber(),
       pago: cita.pago
-        ? {
+          ? {
             id: cita.pago.id,
             metodo: cita.pago.metodo,
             referencia: cita.pago.referencia,
             monto: cita.pago.monto.toNumber(),
             fechaPago: cita.pago.fechaPago,
           }
-        : null,
+          : null,
       estado: cita.estado,
       motivoCancelacion: cita.motivoCancelacion,
       creadoEn: cita.creadoEn,
