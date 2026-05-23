@@ -4,13 +4,15 @@ CREATE TABLE `usuarios` (
     `nombre_completo` VARCHAR(191) NOT NULL,
     `correo` VARCHAR(191) NOT NULL,
     `contrasena_hash` VARCHAR(191) NOT NULL,
-    `estado` ENUM('PENDIENTE_VERIFICACION', 'ACTIVO', 'SUSPENDIDO', 'RECHAZADO') NOT NULL DEFAULT 'PENDIENTE_VERIFICACION',
+    `estado` ENUM('PENDIENTE_VERIFICACION', 'PENDIENTE_APROBACION', 'ACTIVO', 'SUSPENDIDO', 'RECHAZADO') NOT NULL DEFAULT 'PENDIENTE_VERIFICACION',
     `correo_verificado` BOOLEAN NOT NULL DEFAULT false,
     `rol_id` VARCHAR(191) NOT NULL,
     `creado_en` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `actualizado_en` DATETIME(3) NOT NULL,
+    `telefono` VARCHAR(191) NULL,
 
     UNIQUE INDEX `usuarios_correo_key`(`correo`),
+    INDEX `usuarios_rol_id_fkey`(`rol_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -36,6 +38,23 @@ CREATE TABLE `codigos_verificacion` (
     `expira_en` DATETIME(3) NOT NULL,
     `usuario_id` VARCHAR(191) NOT NULL,
     `creado_en` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `codigos_verificacion_usuario_id_fkey`(`usuario_id`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `productos` (
+    `id` VARCHAR(191) NOT NULL,
+    `nombre` VARCHAR(191) NOT NULL,
+    `tipo` ENUM('MEDICAMENTO', 'VACUNA', 'INSUMO_QUIRURGICO') NOT NULL,
+    `stock` INTEGER NOT NULL,
+    `stock_minimo` INTEGER NOT NULL,
+    `precio` DECIMAL(10, 2) NOT NULL,
+    `fecha_vencimiento` DATETIME(3) NOT NULL,
+    `activo` BOOLEAN NOT NULL DEFAULT true,
+    `creado_en` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `actualizado_en` DATETIME(3) NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
