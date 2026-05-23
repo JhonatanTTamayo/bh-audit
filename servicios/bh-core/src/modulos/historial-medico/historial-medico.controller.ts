@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   Param,
   ParseUUIDPipe,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +16,7 @@ import { RolesGuard } from '../autenticacion/guards/roles.guard';
 import { RequestConUsuario } from '../autenticacion/interfaces/request-con-usuario.interface';
 import { HistorialMedicoService } from './historial-medico.service';
 import { CrearHistorialMedicoDto } from './dto/crear-historial-medico.dto';
+import { FiltroHistorialMedicoDto } from './dto/filtro-historial-medico.dto';
 
 /**
  * Controlador encargado de exponer endpoints del historial médico de mascotas.
@@ -39,6 +42,26 @@ export class HistorialMedicoController {
     return this.historialMedicoService.crearRegistro(
       mascotaId,
       crearHistorialMedicoDto,
+      request.usuario,
+    );
+  }
+
+  /**
+   * Lista el historial médico completo de una mascota ordenado cronológicamente.
+   *
+   * Ruta:
+   * GET /api/mascotas/:mascotaId/historial
+   */
+  @Get(':mascotaId/historial')
+  @Roles('VETERINARIO', 'RECEPCIONISTA', 'ADMIN', 'CLIENTE')
+  listarHistorial(
+    @Param('mascotaId', ParseUUIDPipe) mascotaId: string,
+    @Query() filtros: FiltroHistorialMedicoDto,
+    @Req() request: RequestConUsuario,
+  ) {
+    return this.historialMedicoService.listarHistorial(
+      mascotaId,
+      filtros,
       request.usuario,
     );
   }
