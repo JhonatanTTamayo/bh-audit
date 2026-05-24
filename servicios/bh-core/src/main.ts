@@ -3,6 +3,12 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
+/**
+ * Función principal para iniciar la aplicación NestJS.
+ *
+ * Configura el prefijo global, CORS, Swagger y las validaciones globales
+ * para los DTOs del microservicio.
+ */
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -21,17 +27,20 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger
-  const config = new DocumentBuilder()
-    .setTitle('API Facturación BH-Core')
-    .setDescription('Documentación de los endpoints de facturación y servicios del sistema')
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('API BH-Core')
+    .setDescription(
+      'Documentación de los endpoints del microservicio bh-core, incluyendo autenticación, usuarios, facturación y servicios del sistema.',
+    )
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, swaggerDocument);
 
   const port = process.env.PORT ?? 3000;
+
   await app.listen(port);
 }
 

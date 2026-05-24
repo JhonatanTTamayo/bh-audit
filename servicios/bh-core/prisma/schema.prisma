@@ -20,7 +20,11 @@ model Usuario {
   rol   Rol    @relation(fields: [rolId], references: [id])
 
   codigosVerificacion CodigoVerificacion[]
-  historiales         HistorialMedico[]    @relation("VeterinarioHistoriales")
+
+  citasVeterinario Cita[]   @relation("CitasVeterinario")
+  cliente          Cliente?
+
+  historiales HistorialMedico[] @relation("VeterinarioHistoriales")
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -67,6 +71,9 @@ model Cliente {
   telefono  String
   email     String @unique
 
+  usuarioId String?  @unique @map("usuario_id")
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+
   mascotas Mascota[]
 
   creadoEn DateTime @default(now()) @map("creado_en")
@@ -88,6 +95,7 @@ model Mascota {
 
   clienteId String  @map("cliente_id")
   cliente   Cliente @relation(fields: [clienteId], references: [id])
+  citas     Cita[]
 
   historiales HistorialMedico[]
 
@@ -101,11 +109,11 @@ model Mascota {
 model HistorialMedico {
   id String @id @default(uuid())
 
-  motivoConsulta     String    @map("motivo_consulta")
+  motivoConsulta     String          @map("motivo_consulta")
   diagnostico        String
   tratamiento        String
-  pesoMascota        Decimal   @map("peso_mascota") @db.Decimal(10, 2)
-  fechaProximaVisita DateTime? @map("fecha_proxima_visita")
+  pesoMascota        Decimal         @map("peso_mascota") @db.Decimal(10, 2)
+  fechaProximaVisita DateTime?       @map("fecha_proxima_visita")
   estado             EstadoHistorial @default(CERRADO)
 
   mascotaId String  @map("mascota_id")
@@ -121,6 +129,12 @@ model HistorialMedico {
 
   @@map("historiales_medicos")
 }
+
+/**
+ * =========================
+ * PRODUCTOS
+ * =========================
+ */
 
 model MedicamentoPrescrito {
   id String @id @default(uuid())
@@ -160,6 +174,12 @@ model Producto {
   @@map("productos")
 }
 
+/**
+ * =========================
+ * FACTURACION / ATENCIONES
+ * =========================
+ */
+
 model Atencion {
   id String @id @default(uuid())
 
@@ -171,17 +191,6 @@ model Atencion {
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
   @@map("atenciones")
-}
-
-model Servicio {
-  id     String  @id @default(uuid())
-  nombre String
-  precio Decimal @db.Decimal(10, 2)
-
-  atencionId String   @map("atencion_id")
-  atencion   Atencion @relation(fields: [atencionId], references: [id])
-
-  @@map("servicios")
 }
 
 model Factura {
@@ -201,6 +210,90 @@ model Factura {
 
   @@map("facturas")
 }
+
+/**
+ * =========================
+ * CITAS
+ * =========================
+ */
+
+model Servicio {
+  id String @id @default(uuid())
+
+  nombre      String
+  descripcion String?
+  precio      Decimal @db.Decimal(10, 2)
+  activo      Boolean @default(true)
+
+  citas      CitaServicio[]
+  atenciones Atencion[]
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("servicios")
+}
+
+model Cita {
+  id String @id @default(uuid())
+
+  fecha             DateTime   @db.Date
+  hora              String     @db.VarChar(5)
+  estado            EstadoCita @default(CONFIRMADA)
+  montoTotal        Decimal    @map("monto_total") @db.Decimal(10, 2)
+  motivoCancelacion String?    @map("motivo_cancelacion") @db.VarChar(500)
+
+  mascotaId String  @map("mascota_id")
+  mascota   Mascota @relation(fields: [mascotaId], references: [id])
+
+  veterinarioId String  @map("veterinario_id")
+  veterinario   Usuario @relation("CitasVeterinario", fields: [veterinarioId], references: [id])
+
+  servicios CitaServicio[]
+  pago      Pago?
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@index([mascotaId])
+  @@index([veterinarioId, fecha, hora])
+  @@map("citas")
+}
+
+model CitaServicio {
+  citaId         String  @map("cita_id")
+  servicioId     String  @map("servicio_id")
+  precioAplicado Decimal @map("precio_aplicado") @db.Decimal(10, 2)
+
+  cita     Cita     @relation(fields: [citaId], references: [id])
+  servicio Servicio @relation(fields: [servicioId], references: [id])
+
+  @@id([citaId, servicioId])
+  @@index([servicioId])
+  @@map("citas_servicios")
+}
+
+model Pago {
+  id String @id @default(uuid())
+
+  metodo     MetodoPago
+  referencia String?
+  monto      Decimal    @db.Decimal(10, 2)
+  fechaPago  DateTime   @default(now()) @map("fecha_pago")
+
+  citaId String @unique @map("cita_id")
+  cita   Cita   @relation(fields: [citaId], references: [id])
+
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  @@map("pagos")
+}
+
+/**
+ * =========================
+ * ENUMS
+ * =========================
+ */
 
 enum EstadoUsuario {
   PENDIENTE_VERIFICACION
@@ -230,4 +323,16 @@ enum TipoProducto {
   MEDICAMENTO
   VACUNA
   INSUMO_QUIRURGICO
+}
+
+enum EstadoCita {
+  CONFIRMADA
+  FINALIZADA
+  CANCELADA
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
 }

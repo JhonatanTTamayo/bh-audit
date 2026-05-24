@@ -39,7 +39,55 @@ async function main() {
     });
   }
 
-  console.log('Roles iniciales creados correctamente.');
+  const servicios = [
+    {
+      nombre: 'Consulta general',
+      descripcion: 'Revision medica general de la mascota',
+      precio: 50000,
+    },
+    {
+      nombre: 'Vacunacion',
+      descripcion: 'Aplicacion de vacuna segun esquema medico',
+      precio: 80000,
+    },
+    {
+      nombre: 'Desparasitacion',
+      descripcion: 'Servicio de desparasitacion preventiva',
+      precio: 40000,
+    },
+  ];
+
+  for (const servicio of servicios) {
+    const servicioExistente = await prisma.servicio.findFirst({
+      where: {
+        nombre: servicio.nombre,
+      },
+    });
+
+    if (servicioExistente) {
+      await prisma.servicio.update({
+        where: {
+          id: servicioExistente.id,
+        },
+        data: {
+          descripcion: servicio.descripcion,
+          precio: servicio.precio,
+          activo: true,
+        },
+      });
+
+      continue;
+    }
+
+    await prisma.servicio.create({
+      data: {
+        ...servicio,
+        activo: true,
+      },
+    });
+  }
+
+  console.log('Roles y servicios iniciales creados correctamente.');
 }
 
 main()
