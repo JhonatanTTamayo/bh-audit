@@ -4,14 +4,8 @@ generator client {
 
 datasource db {
   provider = "mysql"
-   url= env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
-
-/// Representa a los usuarios registrados dentro del sistema.
-///
-/// Este modelo almacena la información principal del usuario,
-/// incluyendo sus datos personales, credenciales cifradas,
-/// estado de cuenta y relación con su rol.
 
 model Usuario {
   id               String        @id @default(uuid())
@@ -26,17 +20,13 @@ model Usuario {
   rol   Rol    @relation(fields: [rolId], references: [id])
 
   codigosVerificacion CodigoVerificacion[]
+  citasVeterinario    Cita[]               @relation("VeterinarioCitas")
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
   @@map("usuarios")
 }
-
-/// Representa los roles disponibles dentro del sistema.
-///
-/// Un rol permite clasificar a los usuarios y será utilizado
-/// posteriormente para aplicar reglas de autorización.
 
 model Rol {
   id          String  @id @default(uuid())
@@ -51,12 +41,6 @@ model Rol {
 
   @@map("roles")
 }
-
-/// Representa los códigos usados para verificar el correo
-/// electrónico de un usuario.
-///
-/// Este modelo permitirá controlar si un código ya fue usado,
-/// cuándo expira y a qué usuario pertenece.
 
 model CodigoVerificacion {
   id       String    @id @default(uuid())
@@ -73,7 +57,128 @@ model CodigoVerificacion {
   @@map("codigos_verificacion")
 }
 
-/// Define los posibles estados de una cuenta de usuario.
+model Cliente {
+  id        String @id @default(uuid())
+  nombre    String
+  apellido  String
+  documento String @unique
+  direccion String
+  telefono  String
+  email     String @unique
+
+  mascotas Mascota[]
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("clientes")
+}
+
+model Mascota {
+  id      String        @id @default(uuid())
+  nombre  String
+  especie String
+  raza    String?
+  edad    Int?
+  peso    Decimal?      @db.Decimal(10, 2)
+  estado  EstadoMascota @default(ACTIVA)
+
+  clienteId String  @map("cliente_id")
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+
+  citas Cita[]
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@index([clienteId])
+  @@map("mascotas")
+}
+
+model Servicio {
+  id          String  @id @default(uuid())
+  nombre      String
+  descripcion String?
+  precio      Decimal @db.Decimal(10, 2)
+  activo      Boolean @default(true)
+
+  citas CitaServicio[]
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("servicios")
+}
+
+model Cita {
+  id                String     @id @default(uuid())
+  fecha             DateTime   @db.Date
+  hora              String     @db.VarChar(5)
+  estado            EstadoCita @default(CONFIRMADA)
+  montoTotal        Decimal    @map("monto_total") @db.Decimal(10, 2)
+  motivoCancelacion String?    @map("motivo_cancelacion") @db.VarChar(500)
+
+  mascotaId String  @map("mascota_id")
+  mascota   Mascota @relation(fields: [mascotaId], references: [id])
+
+  veterinarioId String  @map("veterinario_id")
+  veterinario   Usuario @relation("VeterinarioCitas", fields: [veterinarioId], references: [id])
+
+  servicios CitaServicio[]
+  pago      Pago?
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@index([mascotaId])
+  @@index([veterinarioId, fecha, hora])
+  @@map("citas")
+}
+
+model CitaServicio {
+  citaId String @map("cita_id")
+  cita   Cita   @relation(fields: [citaId], references: [id])
+
+  servicioId String   @map("servicio_id")
+  servicio   Servicio @relation(fields: [servicioId], references: [id])
+
+  precioAplicado Decimal @map("precio_aplicado") @db.Decimal(10, 2)
+
+  @@id([citaId, servicioId])
+  @@index([servicioId])
+  @@map("citas_servicios")
+}
+
+model Pago {
+  id         String     @id @default(uuid())
+  metodo     MetodoPago
+  referencia String?
+  monto      Decimal    @db.Decimal(10, 2)
+  fechaPago  DateTime   @default(now()) @map("fecha_pago")
+
+  citaId String @unique @map("cita_id")
+  cita   Cita   @relation(fields: [citaId], references: [id])
+
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  @@map("pagos")
+}
+
+model Inventario {
+  id               Int       @id @default(autoincrement())
+  nombre           String
+  tipo             String
+  stock            Int
+  stockMinimo      Int       @map("stock_minimo")
+  precio           Decimal   @db.Decimal(10, 2)
+  fechaVencimiento DateTime? @map("fecha_vencimiento")
+  activo           Boolean   @default(true)
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("inventario")
+}
 
 enum EstadoUsuario {
   PENDIENTE_VERIFICACION
@@ -81,4 +186,22 @@ enum EstadoUsuario {
   ACTIVO
   SUSPENDIDO
   RECHAZADO
+}
+
+enum EstadoMascota {
+  ACTIVA
+  HOSPITALIZADA
+  FALLECIDA
+}
+
+enum EstadoCita {
+  CONFIRMADA
+  FINALIZADA
+  CANCELADA
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
 }
