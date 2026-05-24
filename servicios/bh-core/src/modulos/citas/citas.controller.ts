@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Req,
@@ -14,8 +16,10 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -73,6 +77,33 @@ export class CitasController {
     @Req() request: RequestConUsuario,
   ) {
     return this.citasService.listarCitas(filtros, request.usuario);
+  }
+
+  /**
+   * Obtiene una cita por ID aplicando reglas de acceso por rol.
+   *
+   * Ruta:
+   * GET /bh-core/v1/citas/:id
+   */
+  @Get(':id')
+  @Roles('CLIENTE', 'VETERINARIO', 'RECEPCIONISTA', 'ADMIN')
+  @ApiOperation({
+    summary: 'Obtener cita por ID',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID de la cita.',
+  })
+  @ApiOkResponse({ description: 'Datos de la cita.' })
+  @ApiUnauthorizedResponse({ description: 'No autenticado.' })
+  @ApiForbiddenResponse({ description: 'Acceso denegado.' })
+  @ApiNotFoundResponse({ description: 'Cita no encontrada.' })
+  obtenerCita(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: RequestConUsuario,
+  ) {
+    return this.citasService.obtenerCitaPorId(id, request.usuario);
   }
 
   /**
