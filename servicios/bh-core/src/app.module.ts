@@ -8,6 +8,7 @@ import { AutenticacionModule } from './modulos/autenticacion/autenticacion.modul
 import { CorreosModule } from './modulos/correos/correos.module';
 import { RolesModule } from './modulos/roles/roles.module';
 import { UsuariosModule } from './modulos/usuarios/usuarios.module';
+import { ClientesModule } from './modulos/clientes/clientes.module';
 
 /**
  * Modulo raíz del microservicio bh-core
@@ -55,6 +56,8 @@ import { UsuariosModule } from './modulos/usuarios/usuarios.module';
      * Módulo encargado del envío de correos electrónicos.
      */
     CorreosModule,
+
+    ClientesModule
   ],
   controllers: [AppController],
   providers: [AppService],

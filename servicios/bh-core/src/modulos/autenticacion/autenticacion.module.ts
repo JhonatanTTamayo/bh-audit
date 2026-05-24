@@ -23,6 +23,6 @@ import { AutenticacionService } from './autenticacion.service';
   ],
   controllers: [AutenticacionController],
   providers: [AutenticacionService, JwtAuthGuard, RolesGuard],
-  exports: [AutenticacionService, JwtAuthGuard, RolesGuard],
+  exports: [AutenticacionService, JwtModule ,JwtAuthGuard, RolesGuard],
 })
 export class AutenticacionModule {}
