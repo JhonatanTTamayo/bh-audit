@@ -4,14 +4,8 @@ generator client {
 
 datasource db {
   provider = "mysql"
-   url= env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
-
-/// Representa a los usuarios registrados dentro del sistema.
-///
-/// Este modelo almacena la información principal del usuario,
-/// incluyendo sus datos personales, credenciales cifradas,
-/// estado de cuenta y relación con su rol.
 
 model Usuario {
   id               String        @id @default(uuid())
@@ -26,17 +20,13 @@ model Usuario {
   rol   Rol    @relation(fields: [rolId], references: [id])
 
   codigosVerificacion CodigoVerificacion[]
+  historiales         HistorialMedico[]    @relation("VeterinarioHistoriales")
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
   @@map("usuarios")
 }
-
-/// Representa los roles disponibles dentro del sistema.
-///
-/// Un rol permite clasificar a los usuarios y será utilizado
-/// posteriormente para aplicar reglas de autorización.
 
 model Rol {
   id          String  @id @default(uuid())
@@ -51,12 +41,6 @@ model Rol {
 
   @@map("roles")
 }
-
-/// Representa los códigos usados para verificar el correo
-/// electrónico de un usuario.
-///
-/// Este modelo permitirá controlar si un código ya fue usado,
-/// cuándo expira y a qué usuario pertenece.
 
 model CodigoVerificacion {
   id       String    @id @default(uuid())
@@ -73,7 +57,6 @@ model CodigoVerificacion {
   @@map("codigos_verificacion")
 }
 
-/// Definimos el cliente
 model Cliente {
   id String @id @default(uuid())
 
@@ -99,12 +82,14 @@ model Mascota {
   raza            String?
   color           String
   fechaNacimiento DateTime @map("fecha_nacimiento")
-  peso    Decimal?      @db.Decimal(10, 2)
+  peso            Decimal? @db.Decimal(10, 2)
 
   estado EstadoMascota @default(ACTIVA)
 
   clienteId String  @map("cliente_id")
   cliente   Cliente @relation(fields: [clienteId], references: [id])
+
+  historiales HistorialMedico[]
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -113,40 +98,20 @@ model Mascota {
   @@map("mascotas")
 }
 
-/// Define los posibles estados de una cuenta de usuario.
-
-enum EstadoUsuario {
-  PENDIENTE_VERIFICACION
-  PENDIENTE_APROBACION
-  ACTIVO
-  SUSPENDIDO
-  RECHAZADO
-}
-/**
- * =========================
- * HISTORIAL MÉDICO
- * =========================
- */
-
 model HistorialMedico {
   id String @id @default(uuid())
 
-  motivoConsulta String @map("motivo_consulta")
-
-  diagnostico String
-
-  tratamiento String
-
-  pesoMascota Decimal @map("peso_mascota") @db.Decimal(10, 2)
-
+  motivoConsulta     String    @map("motivo_consulta")
+  diagnostico        String
+  tratamiento        String
+  pesoMascota        Decimal   @map("peso_mascota") @db.Decimal(10, 2)
   fechaProximaVisita DateTime? @map("fecha_proxima_visita")
+  estado             EstadoHistorial @default(CERRADO)
 
-  estado EstadoHistorial @default(CERRADO)
-
-  mascotaId String @map("mascota_id")
+  mascotaId String  @map("mascota_id")
   mascota   Mascota @relation(fields: [mascotaId], references: [id])
 
-  veterinarioId String @map("veterinario_id")
+  veterinarioId String  @map("veterinario_id")
   veterinario   Usuario @relation("VeterinarioHistoriales", fields: [veterinarioId], references: [id])
 
   medicamentos MedicamentoPrescrito[]
@@ -160,8 +125,8 @@ model HistorialMedico {
 model MedicamentoPrescrito {
   id String @id @default(uuid())
 
-  historialId String            @map("historial_id")
-  historial   HistorialMedico   @relation(fields: [historialId], references: [id])
+  historialId String          @map("historial_id")
+  historial   HistorialMedico @relation(fields: [historialId], references: [id])
 
   productoId String   @map("producto_id")
   producto   Producto @relation(fields: [productoId], references: [id])
@@ -173,12 +138,6 @@ model MedicamentoPrescrito {
   @@map("medicamentos_prescritos")
 }
 
-/**
- * =========================
- * PRODUCTOS
- * =========================
- */
-
 model Producto {
   id String @id @default(uuid())
 
@@ -188,13 +147,12 @@ model Producto {
   stock       Int
   stockMinimo Int @map("stock_minimo")
 
-  precio Decimal @db.Decimal(10, 2)
-
+  precio           Decimal  @db.Decimal(10, 2)
   fechaVencimiento DateTime @map("fecha_vencimiento")
-
-  activo Boolean @default(true)
+  activo           Boolean  @default(true)
 
   medicamentosPrescritos MedicamentoPrescrito[]
+  atenciones             Atencion[]
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -202,10 +160,70 @@ model Producto {
   @@map("productos")
 }
 
+model Atencion {
+  id String @id @default(uuid())
+
+  servicios    Servicio[]
+  medicamentos Producto[]
+  factura      Factura?
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("atenciones")
+}
+
+model Servicio {
+  id     String  @id @default(uuid())
+  nombre String
+  precio Decimal @db.Decimal(10, 2)
+
+  atencionId String   @map("atencion_id")
+  atencion   Atencion @relation(fields: [atencionId], references: [id])
+
+  @@map("servicios")
+}
+
+model Factura {
+  id String @id @default(uuid())
+
+  atencionId String   @unique @map("atencion_id")
+  atencion   Atencion @relation(fields: [atencionId], references: [id])
+
+  metodoPago      String?       @map("metodo_pago")
+  totalFacturado  Decimal       @map("total_facturado") @db.Decimal(10, 2)
+  descuento       Decimal       @default(0) @db.Decimal(10, 2)
+  estado          EstadoFactura @default(EMITIDA)
+  motivoAnulacion String?       @map("motivo_anulacion")
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("facturas")
+}
+
+enum EstadoUsuario {
+  PENDIENTE_VERIFICACION
+  PENDIENTE_APROBACION
+  ACTIVO
+  SUSPENDIDO
+  RECHAZADO
+}
+
+enum EstadoMascota {
+  ACTIVA
+  HOSPITALIZADA
+  FALLECIDA
+}
 
 enum EstadoHistorial {
   ABIERTO
   CERRADO
+}
+
+enum EstadoFactura {
+  EMITIDA
+  ANULADA
 }
 
 enum TipoProducto {
