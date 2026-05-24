@@ -122,8 +122,57 @@ enum EstadoUsuario {
   SUSPENDIDO
   RECHAZADO
 }
+/**
+ * =========================
+ * HISTORIAL MÉDICO
+ * =========================
+ */
 
-<<<<<<< HEAD
+model HistorialMedico {
+  id String @id @default(uuid())
+
+  motivoConsulta String @map("motivo_consulta")
+
+  diagnostico String
+
+  tratamiento String
+
+  pesoMascota Decimal @map("peso_mascota") @db.Decimal(10, 2)
+
+  fechaProximaVisita DateTime? @map("fecha_proxima_visita")
+
+  estado EstadoHistorial @default(CERRADO)
+
+  mascotaId String @map("mascota_id")
+  mascota   Mascota @relation(fields: [mascotaId], references: [id])
+
+  veterinarioId String @map("veterinario_id")
+  veterinario   Usuario @relation("VeterinarioHistoriales", fields: [veterinarioId], references: [id])
+
+  medicamentos MedicamentoPrescrito[]
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("historiales_medicos")
+}
+
+model MedicamentoPrescrito {
+  id String @id @default(uuid())
+
+  historialId String            @map("historial_id")
+  historial   HistorialMedico   @relation(fields: [historialId], references: [id])
+
+  productoId String   @map("producto_id")
+  producto   Producto @relation(fields: [productoId], references: [id])
+
+  cantidad Int
+
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  @@map("medicamentos_prescritos")
+}
+
 /**
  * =========================
  * PRODUCTOS
@@ -145,20 +194,22 @@ model Producto {
 
   activo Boolean @default(true)
 
+  medicamentosPrescritos MedicamentoPrescrito[]
+
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
   @@map("productos")
 }
 
+
+enum EstadoHistorial {
+  ABIERTO
+  CERRADO
+}
+
 enum TipoProducto {
   MEDICAMENTO
   VACUNA
   INSUMO_QUIRURGICO
-=======
-enum EstadoMascota {
-  ACTIVA
-  HOSPITALIZADA
-  FALLECIDA
->>>>>>> develop
 }
