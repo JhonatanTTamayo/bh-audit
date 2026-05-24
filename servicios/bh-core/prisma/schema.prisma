@@ -26,6 +26,8 @@ model Usuario {
 
   historiales HistorialMedico[] @relation("VeterinarioHistoriales")
 
+  vacunasAplicadas Vacuna[] @relation("VeterinarioVacunas")
+
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
@@ -98,6 +100,7 @@ model Mascota {
   citas     Cita[]
 
   historiales HistorialMedico[]
+  vacunas Vacuna[]
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -123,6 +126,7 @@ model HistorialMedico {
   veterinario   Usuario @relation("VeterinarioHistoriales", fields: [veterinarioId], references: [id])
 
   medicamentos MedicamentoPrescrito[]
+  vacunas Vacuna[] @relation("HistorialVacunas")
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -167,6 +171,7 @@ model Producto {
 
   medicamentosPrescritos MedicamentoPrescrito[]
   atenciones             Atencion[]
+  vacunas Vacuna[]
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -209,6 +214,42 @@ model Factura {
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
   @@map("facturas")
+}
+
+/**
+ * =========================
+ * VACUNAS
+ * =========================
+ */
+
+model Vacuna {
+  id String @id @default(uuid())
+
+  nombre String
+
+  fechaAplicacion   DateTime @map("fecha_aplicacion") @db.Date
+  fechaProximaDosis DateTime @map("fecha_proxima_dosis") @db.Date
+
+  observaciones String?
+
+  mascotaId String @map("mascota_id")
+  mascota Mascota @relation(fields: [mascotaId],references: [id])
+
+  historialId String? @map("historial_id")
+  historial HistorialMedico? @relation("HistorialVacunas",fields: [historialId],references: [id])
+
+  productoId String? @map("producto_id")
+  producto Producto? @relation(fields: [productoId],references: [id])
+
+  veterinarioId String @map("veterinario_id")
+  veterinario Usuario @relation("VeterinarioVacunas",fields: [veterinarioId],references: [id])
+
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  @@index([mascotaId])
+  @@index([fechaProximaDosis])
+
+  @@map("vacunas")
 }
 
 /**
