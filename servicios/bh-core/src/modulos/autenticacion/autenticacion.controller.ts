@@ -49,7 +49,6 @@ export class AutenticacionController {
     return this.autenticacionService.iniciarSesion(loginDto);
   }
 
-
   /**
    * Valida el acceso exclusivo para usuarios con rol ADMIN.
    *

@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { BasedatosModule } from '../../basedatos/basedatos.module';
 import { UsuariosController } from './usuarios.controller';
 import { UsuariosService } from './usuarios.service';
+import { CorreosModule } from '../correos/correos.module';
 
 /**
  * Módulo de usuarios.
@@ -14,6 +15,7 @@ import { UsuariosService } from './usuarios.service';
 @Module({
   imports: [
     BasedatosModule,
+    CorreosModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'clave_local_temporal',
       signOptions: {
