@@ -10,6 +10,7 @@ import { PrismaService } from '../../basedatos/prisma.service';
 import { InventarioService } from '../inventario/inventario.service';
 import { JwtPayload } from '../autenticacion/interfaces/jwt-payload.interface';
 import { CrearHistorialMedicoDto } from './dto/crear-historial-medico.dto';
+import { ActualizarHistorialMedicoDto } from './dto/actualizar-historial-medico.dto';
 import { FiltroHistorialMedicoDto } from './dto/filtro-historial-medico.dto';
 
 /**
@@ -40,8 +41,6 @@ export class HistorialMedicoService {
 
   /**
    * Registra el resultado de una consulta en el historial médico de la mascota.
-   * Solo puede ser ejecutado por el veterinario autenticado.
-   * El peso de la mascota se actualiza automáticamente.
    */
   async crearRegistro(
     mascotaId: string,
@@ -115,8 +114,87 @@ export class HistorialMedicoService {
   }
 
   /**
+   * Corrige un registro médico únicamente durante las primeras 24 horas.
+   * Solo puede ser ejecutado por el veterinario que creó el registro.
+   */
+  async actualizarRegistro(
+    registroId: string,
+    dto: ActualizarHistorialMedicoDto,
+    usuario: JwtPayload,
+  ) {
+    const registro = await this.prisma.historialMedico.findUnique({
+      where: { id: registroId },
+      include: this.incluirRelaciones(),
+    });
+
+    if (!registro) {
+      throw new NotFoundException({
+        codigo: 'HISTORIAL_NO_ENCONTRADO',
+        mensaje: 'El registro médico indicado no existe.',
+      });
+    }
+
+    if (registro.veterinarioId !== usuario.sub) {
+      throw new ForbiddenException({
+        codigo: 'SIN_PERMISO_EDICION',
+        mensaje: 'Solo el veterinario que creó el registro puede editarlo.',
+      });
+    }
+
+    // Validar ventana de 24 horas usando creadoEn
+    const ahora = new Date();
+    const limite = new Date(registro.creadoEn.getTime() + 24 * 60 * 60 * 1000);
+
+    if (ahora > limite) {
+      throw new ForbiddenException({
+        codigo: 'EDICION_EXPIRADA',
+        mensaje: 'El registro médico solo puede editarse dentro de las primeras 24 horas.',
+      });
+    }
+
+    const registroActualizado = await this.prisma.$transaction(async (tx) => {
+      // Eliminar medicamentos anteriores y reemplazar con los nuevos
+      await tx.medicamentoPrescrito.deleteMany({
+        where: { historialId: registroId },
+      });
+
+      const actualizado = await tx.historialMedico.update({
+        where: { id: registroId },
+        data: {
+          motivoConsulta: dto.motivoConsulta,
+          diagnostico: dto.diagnostico,
+          tratamiento: dto.tratamiento,
+          pesoMascota: dto.pesoMascota,
+          fechaProximaVisita: dto.fechaProximaVisita
+            ? new Date(dto.fechaProximaVisita)
+            : null,
+          medicamentos: dto.medicamentos?.length
+            ? {
+                create: dto.medicamentos.map((m) => ({
+                  productoId: m.productoId,
+                  cantidad: m.cantidad,
+                })),
+              }
+            : undefined,
+        },
+        include: this.incluirRelaciones(),
+      });
+
+      await tx.mascota.update({
+        where: { id: registro.mascotaId },
+        data: { peso: dto.pesoMascota },
+      });
+
+      return actualizado;
+    });
+
+    await this.notificarAuditoria(usuario, registroId, registro.mascotaId, 'EDICION_HISTORIAL_MEDICO');
+
+    return this.formatearRegistro(registroActualizado);
+  }
+
+  /**
    * Lista el historial médico completo de una mascota ordenado cronológicamente.
-   * Accesible por veterinario, recepcionista, admin y el cliente dueño.
    */
   async listarHistorial(
     mascotaId: string,
@@ -170,10 +248,6 @@ export class HistorialMedicoService {
     };
   }
 
-  /**
-   * Notifica al servicio de auditoría bh-audit de forma silenciosa.
-   * Si falla, no interrumpe el flujo principal.
-   */
   private async notificarAuditoria(
     usuario: JwtPayload,
     entidadId: string,
@@ -203,7 +277,7 @@ export class HistorialMedicoService {
         }),
       });
     } catch {
-      // Fallo silencioso: bh-audit no debe interrumpir la operación principal
+      // Fallo silencioso
     }
   }
 
