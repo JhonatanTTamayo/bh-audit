@@ -71,6 +71,29 @@ export class CitasService {
   }
 
   /**
+   * Obtiene una cita por ID respetando el alcance del rol autenticado.
+   */
+  async obtenerCitaPorId(id: string, usuario: JwtPayload) {
+    const cita = await this.prisma.cita.findUnique({
+      where: {
+        id,
+      },
+      include: this.incluirRelacionesCita(),
+    });
+
+    if (!cita) {
+      throw new NotFoundException({
+        codigo: 'CITA_NO_ENCONTRADA',
+        mensaje: 'La cita solicitada no existe.',
+      });
+    }
+
+    this.validarAccesoCita(cita, usuario);
+
+    return this.formatearCita(cita);
+  }
+
+  /**
    * Agenda una cita con pago obligatorio.
    */
   async crearCita(crearCitaDto: CrearCitaDto, usuario: JwtPayload) {
@@ -325,6 +348,31 @@ export class CitasService {
 
     if (usuario.rol === 'VETERINARIO') {
       where.veterinarioId = usuario.sub;
+    }
+  }
+
+  private validarAccesoCita(
+    cita: Prisma.CitaGetPayload<{
+      include: ReturnType<CitasService['incluirRelacionesCita']>;
+    }>,
+    usuario: JwtPayload,
+  ) {
+    if (
+      usuario.rol === 'CLIENTE' &&
+      cita.mascota.cliente.usuarioId !== usuario.sub
+    ) {
+      throw new ForbiddenException({
+        codigo: 'CITA_NO_PERTENECE_AL_CLIENTE',
+        mensaje: 'La cita solicitada no pertenece al cliente autenticado.',
+      });
+    }
+
+    if (usuario.rol === 'VETERINARIO' && cita.veterinarioId !== usuario.sub) {
+      throw new ForbiddenException({
+        codigo: 'CITA_NO_ASIGNADA_AL_VETERINARIO',
+        mensaje:
+          'La cita solicitada no esta asignada al veterinario autenticado.',
+      });
     }
   }
 
