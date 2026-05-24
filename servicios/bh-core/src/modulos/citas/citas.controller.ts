@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -31,6 +32,7 @@ import { JwtAuthGuard } from '../autenticacion/guards/jwt-auth.guard';
 import { RolesGuard } from '../autenticacion/guards/roles.guard';
 import { RequestConUsuario } from '../autenticacion/interfaces/request-con-usuario.interface';
 import { CitasService } from './citas.service';
+import { CancelarCitaDto } from './dto/cancelar-cita.dto';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { FiltroCitasDto } from './dto/filtro-citas.dto';
 
@@ -104,6 +106,40 @@ export class CitasController {
     @Req() request: RequestConUsuario,
   ) {
     return this.citasService.obtenerCitaPorId(id, request.usuario);
+  }
+
+  /**
+   * Cancela una cita confirmada registrando el motivo.
+   *
+   * Ruta:
+   * PATCH /bh-core/v1/citas/:id/cancelar
+   */
+  @Patch(':id/cancelar')
+  @Roles('RECEPCIONISTA', 'ADMIN')
+  @ApiOperation({
+    summary: 'Cancelar cita',
+    description:
+      'Cancela una cita que aun no ha sido atendida. Se debe registrar el motivo. El reembolso queda a criterio administrativo y no lo gestiona el sistema.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID de la cita.',
+  })
+  @ApiBody({ type: CancelarCitaDto })
+  @ApiOkResponse({ description: 'Cita cancelada.' })
+  @ApiBadRequestResponse({
+    description: 'La cita ya fue atendida o no puede cancelarse.',
+  })
+  @ApiUnauthorizedResponse({ description: 'No autenticado.' })
+  @ApiForbiddenResponse({ description: 'Acceso denegado.' })
+  @ApiNotFoundResponse({ description: 'Cita no encontrada.' })
+  cancelarCita(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() cancelarCitaDto: CancelarCitaDto,
+    @Req() request: RequestConUsuario,
+  ) {
+    return this.citasService.cancelarCita(id, cancelarCitaDto, request.usuario);
   }
 
   /**

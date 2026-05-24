@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { EstadoCita, EstadoUsuario, MetodoPago, Prisma } from '@prisma/client';
 
+import { CancelarCitaDto } from './dto/cancelar-cita.dto';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { FiltroCitasDto } from './dto/filtro-citas.dto';
 import { PrismaService } from '../../basedatos/prisma.service';
@@ -91,6 +92,45 @@ export class CitasService {
     this.validarAccesoCita(cita, usuario);
 
     return this.formatearCita(cita);
+  }
+
+  /**
+   * Cancela una cita confirmada registrando el motivo de cancelacion.
+   */
+  async cancelarCita(
+    id: string,
+    cancelarCitaDto: CancelarCitaDto,
+    usuario: JwtPayload,
+  ) {
+    const cita = await this.prisma.cita.findUnique({
+      where: {
+        id,
+      },
+      include: this.incluirRelacionesCita(),
+    });
+
+    if (!cita) {
+      throw new NotFoundException({
+        codigo: 'CITA_NO_ENCONTRADA',
+        mensaje: 'La cita solicitada no existe.',
+      });
+    }
+
+    this.validarAccesoCita(cita, usuario);
+    this.validarCitaCancelable(cita);
+
+    const citaCancelada = await this.prisma.cita.update({
+      where: {
+        id,
+      },
+      data: {
+        estado: EstadoCita.CANCELADA,
+        motivoCancelacion: cancelarCitaDto.motivo,
+      },
+      include: this.incluirRelacionesCita(),
+    });
+
+    return this.formatearCita(citaCancelada);
   }
 
   /**
@@ -372,6 +412,26 @@ export class CitasService {
         codigo: 'CITA_NO_ASIGNADA_AL_VETERINARIO',
         mensaje:
           'La cita solicitada no esta asignada al veterinario autenticado.',
+      });
+    }
+  }
+
+  private validarCitaCancelable(
+    cita: Prisma.CitaGetPayload<{
+      include: ReturnType<CitasService['incluirRelacionesCita']>;
+    }>,
+  ) {
+    if (cita.estado === EstadoCita.FINALIZADA) {
+      throw new BadRequestException({
+        codigo: 'CITA_YA_ATENDIDA',
+        mensaje: 'La cita ya fue atendida y no puede cancelarse.',
+      });
+    }
+
+    if (cita.estado === EstadoCita.CANCELADA) {
+      throw new BadRequestException({
+        codigo: 'CITA_YA_CANCELADA',
+        mensaje: 'La cita ya se encuentra cancelada.',
       });
     }
   }
