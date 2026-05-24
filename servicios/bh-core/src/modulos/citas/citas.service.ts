@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { EstadoCita, EstadoUsuario, MetodoPago, Prisma } from '@prisma/client';
 
 import { CancelarCitaDto } from './dto/cancelar-cita.dto';
+import { ConsultarDisponibilidadDto } from './dto/consultar-disponibilidad.dto';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { FiltroCitasDto } from './dto/filtro-citas.dto';
 import { PrismaService } from '../../basedatos/prisma.service';
@@ -21,6 +22,17 @@ import { CorreosService } from '../correos/correos.service';
  */
 @Injectable()
 export class CitasService {
+  private readonly horariosAtencion = [
+    '08:00',
+    '09:00',
+    '10:00',
+    '11:00',
+    '14:00',
+    '15:00',
+    '16:00',
+    '17:00',
+  ];
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly correosService: CorreosService,
@@ -95,6 +107,54 @@ export class CitasService {
   }
 
   /**
+   * Consulta horarios disponibles de un veterinario en una fecha.
+   */
+  async consultarDisponibilidad(query: ConsultarDisponibilidadDto) {
+    const fecha = this.construirFechaCita(query.fecha);
+
+    const veterinario = await this.prisma.usuario.findUnique({
+      where: {
+        id: query.veterinarioId,
+      },
+      include: {
+        rol: true,
+      },
+    });
+
+    if (
+      !veterinario ||
+      veterinario.rol.nombre !== 'VETERINARIO' ||
+      veterinario.estado !== EstadoUsuario.ACTIVO
+    ) {
+      throw new NotFoundException({
+        codigo: 'VETERINARIO_NO_DISPONIBLE',
+        mensaje: 'El veterinario seleccionado no existe o no esta activo.',
+      });
+    }
+
+    const citasOcupadas = await this.prisma.cita.findMany({
+      where: {
+        veterinarioId: query.veterinarioId,
+        fecha,
+        estado: EstadoCita.CONFIRMADA,
+      },
+      select: {
+        hora: true,
+      },
+    });
+
+    const horasOcupadas = new Set(citasOcupadas.map((cita) => cita.hora));
+
+    return {
+      fecha: query.fecha,
+      veterinarioId: query.veterinarioId,
+      horariosDisponibles: this.horariosAtencion.filter(
+        (hora) => !horasOcupadas.has(hora),
+      ),
+    };
+  }
+
+  /**
    * Cancela una cita confirmada registrando el motivo de cancelacion.
    */
   async cancelarCita(
@@ -131,6 +191,62 @@ export class CitasService {
     });
 
     return this.formatearCita(citaCancelada);
+  }
+
+  /**
+   * Finaliza una cita despues de validar que exista historial medico.
+   */
+  async finalizarCita(id: string, usuario: JwtPayload) {
+    const cita = await this.prisma.cita.findUnique({
+      where: {
+        id,
+      },
+      include: this.incluirRelacionesCita(),
+    });
+
+    if (!cita) {
+      throw new NotFoundException({
+        codigo: 'CITA_NO_ENCONTRADA',
+        mensaje: 'La cita solicitada no existe.',
+      });
+    }
+
+    this.validarAccesoCita(cita, usuario);
+    this.validarCitaFinalizable(cita);
+
+    const historial = await this.prisma.historialMedico.findFirst({
+      where: {
+        mascotaId: cita.mascota.id,
+        veterinarioId: usuario.sub,
+        creadoEn: {
+          gte: this.obtenerInicioDia(cita.fecha),
+          lt: this.obtenerFinDia(cita.fecha),
+        },
+      },
+      orderBy: {
+        creadoEn: 'desc',
+      },
+    });
+
+    if (!historial) {
+      throw new BadRequestException({
+        codigo: 'HISTORIAL_MEDICO_REQUERIDO',
+        mensaje:
+          'Debe registrar el historial medico de la atencion antes de finalizar la cita.',
+      });
+    }
+
+    const citaFinalizada = await this.prisma.cita.update({
+      where: {
+        id,
+      },
+      data: {
+        estado: EstadoCita.FINALIZADA,
+      },
+      include: this.incluirRelacionesCita(),
+    });
+
+    return this.formatearCita(citaFinalizada);
   }
 
   /**
@@ -314,6 +430,16 @@ export class CitasService {
     return new Date(`${fecha}T00:00:00.000Z`);
   }
 
+  private obtenerInicioDia(fecha: Date): Date {
+    return new Date(`${fecha.toISOString().slice(0, 10)}T00:00:00.000Z`);
+  }
+
+  private obtenerFinDia(fecha: Date): Date {
+    const finDia = this.obtenerInicioDia(fecha);
+    finDia.setUTCDate(finDia.getUTCDate() + 1);
+    return finDia;
+  }
+
   private validarRangoFechas(fechaDesde?: string, fechaHasta?: string) {
     if (!fechaDesde || !fechaHasta) {
       return;
@@ -432,6 +558,26 @@ export class CitasService {
       throw new BadRequestException({
         codigo: 'CITA_YA_CANCELADA',
         mensaje: 'La cita ya se encuentra cancelada.',
+      });
+    }
+  }
+
+  private validarCitaFinalizable(
+    cita: Prisma.CitaGetPayload<{
+      include: ReturnType<CitasService['incluirRelacionesCita']>;
+    }>,
+  ) {
+    if (cita.estado === EstadoCita.FINALIZADA) {
+      throw new BadRequestException({
+        codigo: 'CITA_YA_FINALIZADA',
+        mensaje: 'La cita ya se encuentra finalizada.',
+      });
+    }
+
+    if (cita.estado === EstadoCita.CANCELADA) {
+      throw new BadRequestException({
+        codigo: 'CITA_CANCELADA',
+        mensaje: 'La cita cancelada no puede finalizarse.',
       });
     }
   }

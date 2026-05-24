@@ -33,6 +33,7 @@ import { RolesGuard } from '../autenticacion/guards/roles.guard';
 import { RequestConUsuario } from '../autenticacion/interfaces/request-con-usuario.interface';
 import { CitasService } from './citas.service';
 import { CancelarCitaDto } from './dto/cancelar-cita.dto';
+import { ConsultarDisponibilidadDto } from './dto/consultar-disponibilidad.dto';
 import { CrearCitaDto } from './dto/crear-cita.dto';
 import { FiltroCitasDto } from './dto/filtro-citas.dto';
 
@@ -82,18 +83,52 @@ export class CitasController {
   }
 
   /**
+   * Consulta los horarios disponibles de un veterinario en una fecha.
+   *
+   * Ruta:
+   * GET /bh-core/v1/citas/disponibilidad
+   */
+  @Get('disponibilidad')
+  @Roles('RECEPCIONISTA', 'CLIENTE')
+  @ApiOperation({
+    summary: 'Consultar disponibilidad de veterinario',
+    description:
+      'Devuelve los horarios disponibles de un veterinario en una fecha especifica.',
+  })
+  @ApiQuery({
+    name: 'veterinarioId',
+    required: true,
+    type: String,
+    description: 'ID del veterinario.',
+  })
+  @ApiQuery({
+    name: 'fecha',
+    required: true,
+    type: String,
+    description: 'Fecha a consultar (YYYY-MM-DD).',
+  })
+  @ApiOkResponse({ description: 'Horarios disponibles.' })
+  @ApiBadRequestResponse({ description: 'Solicitud invalida.' })
+  @ApiUnauthorizedResponse({ description: 'No autenticado.' })
+  @ApiForbiddenResponse({ description: 'Acceso denegado.' })
+  @ApiNotFoundResponse({ description: 'Veterinario no encontrado.' })
+  consultarDisponibilidad(@Query() query: ConsultarDisponibilidadDto) {
+    return this.citasService.consultarDisponibilidad(query);
+  }
+
+  /**
    * Obtiene una cita por ID aplicando reglas de acceso por rol.
    *
    * Ruta:
-   * GET /bh-core/v1/citas/:id
+   * GET /bh-core/v1/citas/:citaId
    */
-  @Get(':id')
+  @Get(':citaId')
   @Roles('CLIENTE', 'VETERINARIO', 'RECEPCIONISTA', 'ADMIN')
   @ApiOperation({
     summary: 'Obtener cita por ID',
   })
   @ApiParam({
-    name: 'id',
+    name: 'citaId',
     type: String,
     description: 'ID de la cita.',
   })
@@ -102,19 +137,19 @@ export class CitasController {
   @ApiForbiddenResponse({ description: 'Acceso denegado.' })
   @ApiNotFoundResponse({ description: 'Cita no encontrada.' })
   obtenerCita(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('citaId', ParseUUIDPipe) citaId: string,
     @Req() request: RequestConUsuario,
   ) {
-    return this.citasService.obtenerCitaPorId(id, request.usuario);
+    return this.citasService.obtenerCitaPorId(citaId, request.usuario);
   }
 
   /**
    * Cancela una cita confirmada registrando el motivo.
    *
    * Ruta:
-   * PATCH /bh-core/v1/citas/:id/cancelar
+   * PATCH /bh-core/v1/citas/:citaId/cancelar
    */
-  @Patch(':id/cancelar')
+  @Patch(':citaId/cancelar')
   @Roles('RECEPCIONISTA', 'ADMIN')
   @ApiOperation({
     summary: 'Cancelar cita',
@@ -122,7 +157,7 @@ export class CitasController {
       'Cancela una cita que aun no ha sido atendida. Se debe registrar el motivo. El reembolso queda a criterio administrativo y no lo gestiona el sistema.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'citaId',
     type: String,
     description: 'ID de la cita.',
   })
@@ -135,11 +170,45 @@ export class CitasController {
   @ApiForbiddenResponse({ description: 'Acceso denegado.' })
   @ApiNotFoundResponse({ description: 'Cita no encontrada.' })
   cancelarCita(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('citaId', ParseUUIDPipe) citaId: string,
     @Body() cancelarCitaDto: CancelarCitaDto,
     @Req() request: RequestConUsuario,
   ) {
-    return this.citasService.cancelarCita(id, cancelarCitaDto, request.usuario);
+    return this.citasService.cancelarCita(
+      citaId,
+      cancelarCitaDto,
+      request.usuario,
+    );
+  }
+
+  /**
+   * Finaliza una cita despues de registrar el historial medico.
+   *
+   * Ruta:
+   * PATCH /bh-core/v1/citas/:citaId/finalizar
+   */
+  @Patch(':citaId/finalizar')
+  @Roles('VETERINARIO')
+  @ApiOperation({
+    summary: 'Marcar cita como finalizada',
+    description:
+      'Marca la cita como finalizada despues de que el veterinario haya registrado el historial medico correspondiente.',
+  })
+  @ApiParam({
+    name: 'citaId',
+    type: String,
+    description: 'ID de la cita.',
+  })
+  @ApiOkResponse({ description: 'Cita finalizada.' })
+  @ApiBadRequestResponse({ description: 'La cita no puede finalizarse.' })
+  @ApiUnauthorizedResponse({ description: 'No autenticado.' })
+  @ApiForbiddenResponse({ description: 'Acceso denegado.' })
+  @ApiNotFoundResponse({ description: 'Cita no encontrada.' })
+  finalizarCita(
+    @Param('citaId', ParseUUIDPipe) citaId: string,
+    @Req() request: RequestConUsuario,
+  ) {
+    return this.citasService.finalizarCita(citaId, request.usuario);
   }
 
   /**
