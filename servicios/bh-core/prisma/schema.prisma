@@ -98,3 +98,36 @@ enum EstadoUsuario {
   SUSPENDIDO
   RECHAZADO
 }
+
+/**
+ * =========================
+ * PRODUCTOS
+ * =========================
+ */
+
+model Producto {
+  id String @id @default(uuid())
+
+  nombre String
+  tipo   TipoProducto
+
+  stock       Int
+  stockMinimo Int @map("stock_minimo")
+
+  precio Decimal @db.Decimal(10, 2)
+
+  fechaVencimiento DateTime @map("fecha_vencimiento")
+
+  activo Boolean @default(true)
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("productos")
+}
+
+enum TipoProducto {
+  MEDICAMENTO
+  VACUNA
+  INSUMO_QUIRURGICO
+}
