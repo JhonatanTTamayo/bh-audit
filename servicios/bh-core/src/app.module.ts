@@ -10,6 +10,7 @@ import { RolesModule } from './modulos/roles/roles.module';
 import { UsuariosModule } from './modulos/usuarios/usuarios.module';
 import { ClientesModule } from './modulos/clientes/clientes.module';
 import { CatalogoModule } from './servicios/catalogo/catalogo.module';
+import { ServiciosModule } from './servicios/servicios.module';
 
 /**
  * Modulo raíz del microservicio bh-core
@@ -20,6 +21,7 @@ import { CatalogoModule } from './servicios/catalogo/catalogo.module';
 
 @Module({
   imports: [
+
     /**
      * ConfigModule permite leer variables de entorno desde archivos .env
      *
@@ -65,6 +67,11 @@ import { CatalogoModule } from './servicios/catalogo/catalogo.module';
      * Módulo encargado del catálogo de servicios de la clínica.
      */
     CatalogoModule,
+
+    /**
+     * Módulo encargado de la gestión de servicios por parte del administrador.
+     */
+    ServiciosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
