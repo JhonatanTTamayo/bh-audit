@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Param,
   ParseUUIDPipe,
   Query,
@@ -17,6 +18,7 @@ import { RequestConUsuario } from '../autenticacion/interfaces/request-con-usuar
 import { HistorialMedicoService } from './historial-medico.service';
 import { PrescribirMedicamentoDto } from './dto/prescribir-medicamento.dto';
 import { CrearHistorialMedicoDto } from './dto/crear-historial-medico.dto';
+import { ActualizarHistorialMedicoDto } from './dto/actualizar-historial-medico.dto';
 import { FiltroHistorialMedicoDto } from './dto/filtro-historial-medico.dto';
 
 /**
@@ -83,6 +85,26 @@ export class HistorialMedicoController {
     return this.historialMedicoService.listarHistorial(
       mascotaId,
       filtros,
+      request.usuario,
+    );
+  }
+
+  /**
+   * Corrige un registro médico únicamente durante las primeras 24 horas.
+   *
+   * Ruta:
+   * PUT /api/mascotas/historial/:registroId
+   */
+  @Put('historial/:registroId')
+  @Roles('VETERINARIO')
+  actualizarRegistro(
+    @Param('registroId', ParseUUIDPipe) registroId: string,
+    @Body() actualizarHistorialMedicoDto: ActualizarHistorialMedicoDto,
+    @Req() request: RequestConUsuario,
+  ) {
+    return this.historialMedicoService.actualizarRegistro(
+      registroId,
+      actualizarHistorialMedicoDto,
       request.usuario,
     );
   }
