@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   Param,
   ParseUUIDPipe,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -15,6 +17,7 @@ import { RequestConUsuario } from '../autenticacion/interfaces/request-con-usuar
 import { HistorialMedicoService } from './historial-medico.service';
 import { PrescribirMedicamentoDto } from './dto/prescribir-medicamento.dto';
 import { CrearHistorialMedicoDto } from './dto/crear-historial-medico.dto';
+import { FiltroHistorialMedicoDto } from './dto/filtro-historial-medico.dto';
 
 /**
  * Controlador encargado de exponer endpoints del historial médico de mascotas.
@@ -31,7 +34,7 @@ export class HistorialMedicoController {
    * Prescribe un medicamento descontando stock del inventario.
    *
    * Ruta:
-   * POST /api/historial-medico/prescribir
+   * POST /api/mascotas/historial-medico/prescribir
    */
   @Post('historial-medico/prescribir')
   @Roles('VETERINARIO')
@@ -60,6 +63,26 @@ export class HistorialMedicoController {
     return this.historialMedicoService.crearRegistro(
       mascotaId,
       crearHistorialMedicoDto,
+      request.usuario,
+    );
+  }
+
+  /**
+   * Lista el historial médico completo de una mascota ordenado cronológicamente.
+   *
+   * Ruta:
+   * GET /api/mascotas/:mascotaId/historial
+   */
+  @Get(':mascotaId/historial')
+  @Roles('VETERINARIO', 'RECEPCIONISTA', 'ADMIN', 'CLIENTE')
+  listarHistorial(
+    @Param('mascotaId', ParseUUIDPipe) mascotaId: string,
+    @Query() filtros: FiltroHistorialMedicoDto,
+    @Req() request: RequestConUsuario,
+  ) {
+    return this.historialMedicoService.listarHistorial(
+      mascotaId,
+      filtros,
       request.usuario,
     );
   }

@@ -10,6 +10,7 @@ import { PrismaService } from '../../basedatos/prisma.service';
 import { InventarioService } from '../inventario/inventario.service';
 import { JwtPayload } from '../autenticacion/interfaces/jwt-payload.interface';
 import { CrearHistorialMedicoDto } from './dto/crear-historial-medico.dto';
+import { FiltroHistorialMedicoDto } from './dto/filtro-historial-medico.dto';
 
 /**
  * Servicio encargado de gestionar el historial médico de las mascotas.
@@ -58,7 +59,6 @@ export class HistorialMedicoService {
       });
     }
 
-    // Validar stock suficiente antes de crear el registro
     if (dto.medicamentos?.length) {
       for (const med of dto.medicamentos) {
         const producto = await this.inventarioService.obtenerPorId(med.productoId);
@@ -97,7 +97,6 @@ export class HistorialMedicoService {
         include: this.incluirRelaciones(),
       });
 
-      // Actualizar peso de la mascota
       await tx.mascota.update({
         where: { id: mascotaId },
         data: { peso: dto.pesoMascota },
@@ -106,7 +105,6 @@ export class HistorialMedicoService {
       return nuevoRegistro;
     });
 
-    // Descontar stock de cada medicamento (fuera de la transacción)
     for (const med of dto.medicamentos ?? []) {
       await this.inventarioService.descontarStock(med.productoId, med.cantidad);
     }
@@ -114,6 +112,62 @@ export class HistorialMedicoService {
     await this.notificarAuditoria(usuario, registro.id, mascotaId, 'CREACION_HISTORIAL_MEDICO');
 
     return this.formatearRegistro(registro);
+  }
+
+  /**
+   * Lista el historial médico completo de una mascota ordenado cronológicamente.
+   * Accesible por veterinario, recepcionista, admin y el cliente dueño.
+   */
+  async listarHistorial(
+    mascotaId: string,
+    filtros: FiltroHistorialMedicoDto,
+    usuario: JwtPayload,
+  ) {
+    const page = filtros.page ?? 0;
+    const size = filtros.size ?? 20;
+
+    const mascota = await this.prisma.mascota.findUnique({
+      where: { id: mascotaId },
+    });
+
+    if (!mascota) {
+      throw new NotFoundException({
+        codigo: 'MASCOTA_NO_ENCONTRADA',
+        mensaje: 'La mascota indicada no existe.',
+      });
+    }
+
+    if (usuario.rol === 'CLIENTE' && mascota.clienteId !== usuario.sub) {
+      throw new ForbiddenException({
+        codigo: 'MASCOTA_NO_PERTENECE_AL_CLIENTE',
+        mensaje: 'No tienes permiso para ver el historial de esta mascota.',
+      });
+    }
+
+    const [registros, totalElements] = await Promise.all([
+      this.prisma.historialMedico.findMany({
+        where: { mascotaId },
+        include: this.incluirRelaciones(),
+        orderBy: { creadoEn: 'desc' },
+        skip: page * size,
+        take: size,
+      }),
+      this.prisma.historialMedico.count({
+        where: { mascotaId },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalElements / size);
+
+    return {
+      page,
+      size,
+      totalElements,
+      totalPages,
+      first: page === 0,
+      last: totalPages === 0 || page >= totalPages - 1,
+      content: registros.map((r) => this.formatearRegistro(r)),
+    };
   }
 
   /**
