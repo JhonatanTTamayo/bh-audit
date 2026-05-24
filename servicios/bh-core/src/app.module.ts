@@ -1,6 +1,7 @@
   import { Module } from '@nestjs/common';
   import { ConfigModule } from '@nestjs/config';
 
+<<<<<<< HEAD
   import { AppController } from './app.controller';
   import { AppService } from './app.service';
   import { BasedatosModule } from './basedatos/basedatos.module';
@@ -10,6 +11,17 @@
   import { UsuariosModule } from './modulos/usuarios/usuarios.module';
   import { ClientesModule } from './modulos/clientes/clientes.module';
   import { InventarioModule } from './modulos/inventario/inventario.module';
+=======
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { BasedatosModule } from './basedatos/basedatos.module';
+import { AutenticacionModule } from './modulos/autenticacion/autenticacion.module';
+import { CorreosModule } from './modulos/correos/correos.module';
+import { RolesModule } from './modulos/roles/roles.module';
+import { UsuariosModule } from './modulos/usuarios/usuarios.module';
+import { ClientesModule } from './modulos/clientes/clientes.module';
+import { MascotasModule } from './modulos/mascotas/mascota.module';
+>>>>>>> develop
 
   /**
    * Modulo raíz del microservicio bh-core
@@ -58,6 +70,7 @@
        */
       CorreosModule,
 
+<<<<<<< HEAD
       ClientesModule,
       /**
        * Módulo encargado del crud del inventario.
@@ -68,3 +81,12 @@
     providers: [AppService],
   })
   export class AppModule {}
+=======
+    ClientesModule,
+    MascotasModule
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+>>>>>>> develop
