@@ -9,6 +9,7 @@ import { CorreosModule } from './modulos/correos/correos.module';
 import { RolesModule } from './modulos/roles/roles.module';
 import { UsuariosModule } from './modulos/usuarios/usuarios.module';
 import { ClientesModule } from './modulos/clientes/clientes.module';
+import { MascotasModule } from './modulos/mascotas/mascota.module';
 
 /**
  * Modulo raíz del microservicio bh-core
@@ -57,7 +58,8 @@ import { ClientesModule } from './modulos/clientes/clientes.module';
      */
     CorreosModule,
 
-    ClientesModule
+    ClientesModule,
+    MascotasModule
   ],
   controllers: [AppController],
   providers: [AppService],

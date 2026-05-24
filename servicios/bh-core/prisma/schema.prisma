@@ -84,9 +84,33 @@ model Cliente {
   telefono  String
   email     String @unique
 
+  mascotas Mascota[]
+
   creadoEn DateTime @default(now()) @map("creado_en")
 
   @@map("clientes")
+}
+
+model Mascota {
+  id String @id @default(uuid())
+
+  nombre          String
+  especie         String
+  raza            String?
+  color           String
+  fechaNacimiento DateTime @map("fecha_nacimiento")
+  peso    Decimal?      @db.Decimal(10, 2)
+
+  estado EstadoMascota @default(ACTIVA)
+
+  clienteId String  @map("cliente_id")
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@index([clienteId])
+  @@map("mascotas")
 }
 
 /// Define los posibles estados de una cuenta de usuario.
@@ -97,4 +121,10 @@ enum EstadoUsuario {
   ACTIVO
   SUSPENDIDO
   RECHAZADO
+}
+
+enum EstadoMascota {
+  ACTIVA
+  HOSPITALIZADA
+  FALLECIDA
 }
