@@ -1,17 +1,6 @@
   import { Module } from '@nestjs/common';
   import { ConfigModule } from '@nestjs/config';
 
-<<<<<<< HEAD
-  import { AppController } from './app.controller';
-  import { AppService } from './app.service';
-  import { BasedatosModule } from './basedatos/basedatos.module';
-  import { AutenticacionModule } from './modulos/autenticacion/autenticacion.module';
-  import { CorreosModule } from './modulos/correos/correos.module';
-  import { RolesModule } from './modulos/roles/roles.module';
-  import { UsuariosModule } from './modulos/usuarios/usuarios.module';
-  import { ClientesModule } from './modulos/clientes/clientes.module';
-  import { InventarioModule } from './modulos/inventario/inventario.module';
-=======
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BasedatosModule } from './basedatos/basedatos.module';
@@ -21,7 +10,8 @@ import { RolesModule } from './modulos/roles/roles.module';
 import { UsuariosModule } from './modulos/usuarios/usuarios.module';
 import { ClientesModule } from './modulos/clientes/clientes.module';
 import { MascotasModule } from './modulos/mascotas/mascota.module';
->>>>>>> develop
+import { InventarioModule } from './modulos/inventario/inventario.module';
+import { HistorialMedicoModule } from './modulos/historial-medico/historial-medico.module';
 
   /**
    * Modulo raíz del microservicio bh-core
@@ -70,23 +60,12 @@ import { MascotasModule } from './modulos/mascotas/mascota.module';
        */
       CorreosModule,
 
-<<<<<<< HEAD
-      ClientesModule,
-      /**
-       * Módulo encargado del crud del inventario.
-       */
-      InventarioModule,
-    ],
-    controllers: [AppController],
-    providers: [AppService],
-  })
-  export class AppModule {}
-=======
     ClientesModule,
-    MascotasModule
+    MascotasModule,
+    InventarioModule,
+    HistorialMedicoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
->>>>>>> develop
