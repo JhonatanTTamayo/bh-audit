@@ -1,4 +1,11 @@
-import {ConflictException,Injectable,NotFoundException,BadRequestException,UnauthorizedException,ForbiddenException,} from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { EstadoUsuario } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -47,7 +54,9 @@ export class AutenticacionService {
 
     // Validar que un usuario con rol admin no se registre
     if (rol.nombre === 'ADMIN') {
-      throw new ForbiddenException('No está permitido registrar administradores desde este endpoint',);
+      throw new ForbiddenException(
+        'No está permitido registrar administradores desde este endpoint',
+      );
     }
 
     const contrasenaHash = await bcrypt.hash(registroDto.contrasena, 10);
@@ -74,6 +83,18 @@ export class AutenticacionService {
         rol: true,
       },
     });
+
+    if (rol.nombre === 'CLIENTE') {
+      await this.prisma.cliente.updateMany({
+        where: {
+          email: usuario.correo,
+          usuarioId: null,
+        },
+        data: {
+          usuarioId: usuario.id,
+        },
+      });
+    }
 
     await this.correosService.enviarCodigoVerificacion(
       usuario.correo,
@@ -131,7 +152,8 @@ export class AutenticacionService {
     if (!usuario.correoVerificado) {
       throw new ForbiddenException({
         codigo: 'CORREO_NO_VERIFICADO',
-        mensaje: 'Debes verificar tu correo electrónico antes de iniciar sesión.',
+        mensaje:
+          'Debes verificar tu correo electrónico antes de iniciar sesión.',
       });
     }
 
@@ -164,86 +186,87 @@ export class AutenticacionService {
     };
   }
 
-/**
- * Verifica el correo electrónico de un usuario mediante
- * el código enviado por correo.
- */
-async verificarCorreo(verificarCorreoDto: VerificarCorreoDto) {
-  const usuario = await this.prisma.usuario.findUnique({
-    where: {
-      correo: verificarCorreoDto.correo,
-    },
-    include: {
-      rol: true,
-      codigosVerificacion: {
-        where: {
-          codigo: verificarCorreoDto.codigo,
-        },
-        orderBy: {
-          creadoEn: 'desc',
-        },
-        take: 1,
+  /**
+   * Verifica el correo electrónico de un usuario mediante
+   * el código enviado por correo.
+   */
+  async verificarCorreo(verificarCorreoDto: VerificarCorreoDto) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: {
+        correo: verificarCorreoDto.correo,
       },
-    },
-  });
+      include: {
+        rol: true,
+        codigosVerificacion: {
+          where: {
+            codigo: verificarCorreoDto.codigo,
+          },
+          orderBy: {
+            creadoEn: 'desc',
+          },
+          take: 1,
+        },
+      },
+    });
 
-  if (!usuario) {
-    throw new NotFoundException('El usuario no existe.');
+    if (!usuario) {
+      throw new NotFoundException('El usuario no existe.');
+    }
+
+    if (usuario.correoVerificado) {
+      throw new ConflictException('El correo ya fue verificado.');
+    }
+
+    const codigoVerificacion = usuario.codigosVerificacion[0];
+
+    if (!codigoVerificacion) {
+      throw new BadRequestException('El código de verificación es inválido.');
+    }
+
+    const fechaActual = new Date();
+
+    if (codigoVerificacion.expiraEn < fechaActual) {
+      throw new BadRequestException('El código de verificación expiró.');
+    }
+
+    const estadoDespuesDeVerificar =
+      usuario.rol.nombre === 'RECEPCIONISTA' ||
+      usuario.rol.nombre === 'VETERINARIO'
+        ? EstadoUsuario.PENDIENTE_APROBACION
+        : EstadoUsuario.ACTIVO;
+
+    const usuarioActualizado = await this.prisma.usuario.update({
+      where: {
+        id: usuario.id,
+      },
+      data: {
+        correoVerificado: true,
+        estado: estadoDespuesDeVerificar,
+      },
+      include: {
+        rol: true,
+      },
+    });
+
+    await this.prisma.codigoVerificacion.deleteMany({
+      where: {
+        usuarioId: usuario.id,
+      },
+    });
+
+    return {
+      mensaje: 'Correo verificado correctamente.',
+      usuario: {
+        id: usuarioActualizado.id,
+        nombreCompleto: usuarioActualizado.nombreCompleto,
+        correo: usuarioActualizado.correo,
+        telefono: usuarioActualizado.telefono,
+        rol: usuarioActualizado.rol.nombre,
+        estado: usuarioActualizado.estado,
+        correoVerificado: usuarioActualizado.correoVerificado,
+      },
+    };
   }
-
-  if (usuario.correoVerificado) {
-    throw new ConflictException('El correo ya fue verificado.');
-  }
-
-  const codigoVerificacion = usuario.codigosVerificacion[0];
-
-  if (!codigoVerificacion) {
-    throw new BadRequestException('El código de verificación es inválido.');
-  }
-
-  const fechaActual = new Date();
-
-  if (codigoVerificacion.expiraEn < fechaActual) {
-    throw new BadRequestException('El código de verificación expiró.');
-  }
-
-  const estadoDespuesDeVerificar =
-    usuario.rol.nombre === 'RECEPCIONISTA' || usuario.rol.nombre === 'VETERINARIO'
-      ? EstadoUsuario.PENDIENTE_APROBACION
-      : EstadoUsuario.ACTIVO;
-
-  const usuarioActualizado = await this.prisma.usuario.update({
-    where: {
-      id: usuario.id,
-    },
-    data: {
-      correoVerificado: true,
-      estado: estadoDespuesDeVerificar,
-    },
-    include: {
-      rol: true,
-    },
-  });
-
-  await this.prisma.codigoVerificacion.deleteMany({
-    where: {
-      usuarioId: usuario.id,
-    },
-  });
-
-  return {
-    mensaje: 'Correo verificado correctamente.',
-    usuario: {
-      id: usuarioActualizado.id,
-      nombreCompleto: usuarioActualizado.nombreCompleto,
-      correo: usuarioActualizado.correo,
-      telefono: usuarioActualizado.telefono,
-      rol: usuarioActualizado.rol.nombre,
-      estado: usuarioActualizado.estado,
-      correoVerificado: usuarioActualizado.correoVerificado,
-    },
-  };
-}
 
   /**
    * Genera un código numérico de seis dígitos.
@@ -261,7 +284,9 @@ async verificarCorreo(verificarCorreoDto: VerificarCorreoDto) {
     const minutosExpiracion = 15;
     const fechaExpiracion = new Date();
 
-    fechaExpiracion.setMinutes(fechaExpiracion.getMinutes() + minutosExpiracion);
+    fechaExpiracion.setMinutes(
+      fechaExpiracion.getMinutes() + minutosExpiracion,
+    );
 
     return fechaExpiracion;
   }

@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-   url= env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 /// Representa a los usuarios registrados dentro del sistema.
@@ -26,6 +26,8 @@ model Usuario {
   rol   Rol    @relation(fields: [rolId], references: [id])
 
   codigosVerificacion CodigoVerificacion[]
+  citasVeterinario    Cita[]               @relation("CitasVeterinario")
+  cliente             Cliente?
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -84,6 +86,9 @@ model Cliente {
   telefono  String
   email     String @unique
 
+  usuarioId String?  @unique @map("usuario_id")
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+
   mascotas Mascota[]
 
   creadoEn DateTime @default(now()) @map("creado_en")
@@ -99,12 +104,13 @@ model Mascota {
   raza            String?
   color           String
   fechaNacimiento DateTime @map("fecha_nacimiento")
-  peso    Decimal?      @db.Decimal(10, 2)
+  peso            Decimal? @db.Decimal(10, 2)
 
   estado EstadoMascota @default(ACTIVA)
 
   clienteId String  @map("cliente_id")
   cliente   Cliente @relation(fields: [clienteId], references: [id])
+  citas     Cita[]
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -123,7 +129,6 @@ enum EstadoUsuario {
   RECHAZADO
 }
 
-<<<<<<< HEAD
 /**
  * =========================
  * PRODUCTOS
@@ -155,10 +160,99 @@ enum TipoProducto {
   MEDICAMENTO
   VACUNA
   INSUMO_QUIRURGICO
-=======
+}
+
 enum EstadoMascota {
   ACTIVA
   HOSPITALIZADA
   FALLECIDA
->>>>>>> develop
+}
+
+/**
+ * =========================
+ * CITAS
+ * =========================
+ */
+
+model Servicio {
+  id String @id @default(uuid())
+
+  nombre      String
+  descripcion String?
+  precio      Decimal @db.Decimal(10, 2)
+  activo      Boolean @default(true)
+
+  citas CitaServicio[]
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("servicios")
+}
+
+model Cita {
+  id String @id @default(uuid())
+
+  fecha             DateTime   @db.Date
+  hora              String     @db.VarChar(5)
+  estado            EstadoCita @default(CONFIRMADA)
+  montoTotal        Decimal    @map("monto_total") @db.Decimal(10, 2)
+  motivoCancelacion String?    @map("motivo_cancelacion") @db.VarChar(500)
+
+  mascotaId String  @map("mascota_id")
+  mascota   Mascota @relation(fields: [mascotaId], references: [id])
+
+  veterinarioId String  @map("veterinario_id")
+  veterinario   Usuario @relation("CitasVeterinario", fields: [veterinarioId], references: [id])
+
+  servicios CitaServicio[]
+  pago      Pago?
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@index([mascotaId])
+  @@index([veterinarioId, fecha, hora])
+  @@map("citas")
+}
+
+model CitaServicio {
+  citaId         String  @map("cita_id")
+  servicioId     String  @map("servicio_id")
+  precioAplicado Decimal @map("precio_aplicado") @db.Decimal(10, 2)
+
+  cita     Cita     @relation(fields: [citaId], references: [id])
+  servicio Servicio @relation(fields: [servicioId], references: [id])
+
+  @@id([citaId, servicioId])
+  @@index([servicioId])
+  @@map("citas_servicios")
+}
+
+model Pago {
+  id String @id @default(uuid())
+
+  metodo     MetodoPago
+  referencia String?
+  monto      Decimal    @db.Decimal(10, 2)
+  fechaPago  DateTime   @default(now()) @map("fecha_pago")
+
+  citaId String @unique @map("cita_id")
+  cita   Cita   @relation(fields: [citaId], references: [id])
+
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  @@map("pagos")
+}
+
+enum EstadoCita {
+  CONFIRMADA
+  FINALIZADA
+  CANCELADA
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
 }
