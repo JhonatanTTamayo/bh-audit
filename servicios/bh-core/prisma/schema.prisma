@@ -21,6 +21,7 @@ model Usuario {
 
   codigosVerificacion CodigoVerificacion[]
   historiales         HistorialMedico[]    @relation("VeterinarioHistoriales")
+  citasVeterinario    Cita[]               @relation("VeterinarioCitas")
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -68,6 +69,7 @@ model Cliente {
   email     String @unique
 
   mascotas Mascota[]
+  citas    Cita[]
 
   creadoEn DateTime @default(now()) @map("creado_en")
 
@@ -90,6 +92,7 @@ model Mascota {
   cliente   Cliente @relation(fields: [clienteId], references: [id])
 
   historiales HistorialMedico[]
+  citas       Cita[]
 
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -101,11 +104,11 @@ model Mascota {
 model HistorialMedico {
   id String @id @default(uuid())
 
-  motivoConsulta     String    @map("motivo_consulta")
+  motivoConsulta     String          @map("motivo_consulta")
   diagnostico        String
   tratamiento        String
-  pesoMascota        Decimal   @map("peso_mascota") @db.Decimal(10, 2)
-  fechaProximaVisita DateTime? @map("fecha_proxima_visita")
+  pesoMascota        Decimal         @map("peso_mascota") @db.Decimal(10, 2)
+  fechaProximaVisita DateTime?       @map("fecha_proxima_visita")
   estado             EstadoHistorial @default(CERRADO)
 
   mascotaId String  @map("mascota_id")
@@ -202,6 +205,43 @@ model Factura {
   @@map("facturas")
 }
 
+model Cita {
+  id String @id @default(uuid())
+
+  fechaHora  DateTime   @map("fecha_hora")
+  estado     EstadoCita @default(AGENDADA)
+  motivoPago String?    @map("motivo_pago")
+
+  clienteId String  @map("cliente_id")
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+
+  mascotaId String  @map("mascota_id")
+  mascota   Mascota @relation(fields: [mascotaId], references: [id])
+
+  veterinarioId String  @map("veterinario_id")
+  veterinario   Usuario @relation("VeterinarioCitas", fields: [veterinarioId], references: [id])
+
+  serviciosAgendados ServicioAgendado[]
+
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@index([fechaHora])
+  @@index([veterinarioId])
+  @@map("citas")
+}
+
+model ServicioAgendado {
+  id     String  @id @default(uuid())
+  nombre String
+  precio Decimal @db.Decimal(10, 2)
+
+  citaId String @map("cita_id")
+  cita   Cita   @relation(fields: [citaId], references: [id])
+
+  @@map("servicios_agendados")
+}
+
 enum EstadoUsuario {
   PENDIENTE_VERIFICACION
   PENDIENTE_APROBACION
@@ -230,4 +270,10 @@ enum TipoProducto {
   MEDICAMENTO
   VACUNA
   INSUMO_QUIRURGICO
+}
+
+enum EstadoCita {
+  AGENDADA
+  FINALIZADA
+  CANCELADA
 }
