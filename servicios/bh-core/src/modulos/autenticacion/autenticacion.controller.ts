@@ -12,7 +12,7 @@ import { RequestConUsuario } from './interfaces/request-con-usuario.interface';
 /**
  * Controlador encargado de exponer los endpoints de autenticación.
  */
-@Controller('autenticacion')
+@Controller('auth')
 export class AutenticacionController {
   constructor(private readonly autenticacionService: AutenticacionService) {}
 
@@ -20,9 +20,9 @@ export class AutenticacionController {
    * Registra un usuario y envía un código de verificación al correo.
    *
    * Ruta:
-   * POST /api/autenticacion/registrar
+   * POST /bh-core/v1/auth/registro
    */
-  @Post('registrar')
+  @Post('registro')
   async registrar(@Body() registroDto: RegistroUsuarioDto) {
     return this.autenticacionService.registrar(registroDto);
   }
@@ -31,7 +31,7 @@ export class AutenticacionController {
    * Verifica el correo electrónico de un usuario mediante código.
    *
    * Ruta:
-   * POST /api/autenticacion/verificar-correo
+   * POST /bh-core/v1/auth/verificar-correoo
    */
   @Post('verificar-correo')
   async verificarCorreo(@Body() verificarCorreoDto: VerificarCorreoDto) {
@@ -42,7 +42,7 @@ export class AutenticacionController {
    * Inicia sesión y genera un token JWT para el usuario autenticado.
    *
    * Ruta:
-   * POST /api/autenticacion/login
+   * POST /bh-core/v1/auth/login
    */
   @Post('login')
   async iniciarSesion(@Body() loginDto: LoginDto) {
@@ -53,7 +53,7 @@ export class AutenticacionController {
    * Obtiene la información del usuario autenticado a partir del token JWT.
    *
    * Ruta:
-   * GET /api/autenticacion/perfil
+   * GET /bh-core/v1/autenticacion/perfil
    */
   @Get('perfil')
   @UseGuards(JwtAuthGuard)
@@ -67,7 +67,7 @@ export class AutenticacionController {
    * Valida el acceso exclusivo para usuarios con rol ADMIN.
    *
    * Ruta:
-   * GET /api/autenticacion/admin
+   * GET /bh-core/v1/autenticacion/admin
    */
   @Get('admin')
   @Roles('ADMIN')

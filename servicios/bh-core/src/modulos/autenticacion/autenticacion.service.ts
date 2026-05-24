@@ -45,6 +45,11 @@ export class AutenticacionService {
       throw new NotFoundException('El rol seleccionado no existe.');
     }
 
+    // Validar que un usuario con rol admin no se registre
+    if (rol.nombre === 'ADMIN') {
+      throw new ForbiddenException('No está permitido registrar administradores desde este endpoint',);
+    }
+
     const contrasenaHash = await bcrypt.hash(registroDto.contrasena, 10);
     const codigoVerificacion = this.generarCodigoVerificacion();
     const expiraEn = this.generarFechaExpiracionCodigo();

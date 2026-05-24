@@ -1,11 +1,12 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import {BadRequestException,ConflictException,Injectable,NotFoundException,} from '@nestjs/common';
 import { EstadoUsuario } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../../basedatos/prisma.service';
+import { FiltroUsuariosDto } from './dto/filtro-usuarios.dto';
+import { CreateAdminDto } from './dto/crear-admin.dto';
+import { RechazarCuentaDto } from './dto/rechazar-cuenta.dto';
+import { CorreosService } from '../correos/correos.service';
 
 /**
  * Servicio encargado de gestionar operaciones administrativas
@@ -13,7 +14,10 @@ import { PrismaService } from '../../basedatos/prisma.service';
  */
 @Injectable()
 export class UsuariosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+      private readonly prisma: PrismaService,
+      private readonly correosService: CorreosService,
+  ) {}
 
   /**
    * Lista las cuentas de recepcionistas y veterinarios pendientes de aprobación.
@@ -67,7 +71,7 @@ export class UsuariosService {
   /**
    * Rechaza una cuenta pendiente de aprobación administrativa.
    */
-  async rechazarCuenta(usuarioId: string) {
+  async rechazarCuenta(usuarioId: string, rechazarCuentaDto:RechazarCuentaDto) {
     const usuario = await this.obtenerUsuarioInternoPendiente(usuarioId);
 
     const usuarioActualizado = await this.prisma.usuario.update({
@@ -76,6 +80,8 @@ export class UsuariosService {
       },
       data: {
         estado: EstadoUsuario.RECHAZADO,
+        motivoRechazo:
+          rechazarCuentaDto.motivo,
       },
       include: {
         rol: true,
@@ -207,10 +213,184 @@ async suspenderCuenta(usuarioId: string) {
   };
 } 
     
+    /**
+ * Lista usuarios registrados aplicando filtros opcionales por rol y estado.
+ */
+async listarUsuarios(filtros: FiltroUsuariosDto) {
+  const page = filtros.page ?? 0;
+  const size = filtros.size ?? 20;
+
+  const where = {
+    ...(filtros.estado && {
+      estado: filtros.estado,
+    }),
+    ...(filtros.rol && {
+      rol: {
+        nombre: filtros.rol,
+      },
+    }),
+  };
+
+  const [usuarios, totalElements] = await Promise.all([
+    this.prisma.usuario.findMany({
+      where,
+      include: {
+        rol: true,
+      },
+      orderBy: {
+        creadoEn: 'desc',
+      },
+      skip: page * size,
+      take: size,
+    }),
+    this.prisma.usuario.count({
+      where,
+    }),
+  ]);
+
+  return {
+    page,
+    size,
+    totalElements,
+    totalPages: Math.ceil(totalElements / size),
+    content: usuarios.map((usuario) => this.formatearUsuarioListado(usuario)),
+  };
+}
+
+    /**
+     * Formatea los datos básicos del usuario para el listado administrativo.
+     */
+    private formatearUsuarioListado(usuario: {
+    id: string;
+    nombreCompleto: string;
+    correo: string;
+    telefono: string | null;
+    estado: EstadoUsuario;
+    correoVerificado: boolean;
+    creadoEn: Date;
+    actualizadoEn: Date;
+    rol: {
+        nombre: string;
+    };
+    }) {
+    return {
+        id: usuario.id,
+        nombreCompleto: usuario.nombreCompleto,
+        correo: usuario.correo,
+        telefono: usuario.telefono,
+        rol: usuario.rol.nombre,
+        estado: usuario.estado,
+        correoVerificado: usuario.correoVerificado,
+        creadoEn: usuario.creadoEn,
+        actualizadoEn: usuario.actualizadoEn,
+    };
+    }
+
+    
+async crearAdministrador(createAdminDto: CreateAdminDto) {
+  const usuarioExistente =
+    await this.prisma.usuario.findUnique({
+      where: {correo: createAdminDto.correo,
+      },
+    });
+
+  if (usuarioExistente) {
+    throw new ConflictException(
+      'El correo ya está registrado.',
+    );
+  }
+
+  const rolAdmin =
+    await this.prisma.rol.findFirst({
+      where: {nombre: 'ADMIN',},
+    });
+
+  if (!rolAdmin) {
+    throw new NotFoundException(
+      'El rol administrador no existe.',
+    );
+  }
+
+  const contrasenaHash =
+    await bcrypt.hash(
+      createAdminDto.contrasena,
+      10,
+    );
+
+  const usuario =
+    await this.prisma.usuario.create({
+      data: {
+        nombreCompleto:
+          createAdminDto.nombreCompleto,
+
+        correo:
+          createAdminDto.correo,
+
+        telefono:
+          createAdminDto.telefono,
+
+        contrasenaHash,
+
+        rolId: rolAdmin.id,
+
+        correoVerificado:false,
+
+        estado:
+          EstadoUsuario.PENDIENTE_VERIFICACION,
+      },
+
+      include:{
+        rol:true,
+      },
+    });
+
+    // Generar código de 6 dígitos
+  const codigo =Math.floor(100000 + Math.random() * 900000,).toString();
+
+  // Guardar código
+  await this.prisma.codigoVerificacion.create({
+    data: {
+      codigo,
+      usuarioId: usuario.id,
+      expiraEn: new Date(
+        Date.now() + 15 * 60 * 1000,
+      ),
+    },
+  });
+
+  // Enviar correo
+  await this.correosService.enviarCodigoVerificacion(
+    usuario.correo,
+    usuario.nombreCompleto,
+    codigo,
+  );
 
 
+  return {
+    mensaje:
+      'Administrador creado correctamente. Revisa tu correo para verificar la cuenta.',
 
+    usuario:{
+      id:usuario.id,
+      nombreCompleto:
+        usuario.nombreCompleto,
 
+      correo:
+        usuario.correo,
 
+      telefono:
+        usuario.telefono,
 
+      rol:
+        usuario.rol.nombre,
+
+      estado:
+        usuario.estado,
+
+      correoVerificado:
+        usuario.correoVerificado,
+    },
+  };
+}
+    
 }
