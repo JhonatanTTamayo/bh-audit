@@ -1,25 +1,24 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 
-import { HistorialMedicoController }
-from './historial-medico.controller';
+import { BasedatosModule } from '../../basedatos/basedatos.module';
+import { InventarioModule } from '../inventario/inventario.module';
+import { HistorialMedicoController } from './historial-medico.controller';
+import { HistorialMedicoService } from './historial-medico.service';
 
-import { HistorialMedicoService }
-from './historial-medico.service';
-
-import { InventarioModule }
-from '../inventario/inventario.module';
-
+/**
+ * Módulo encargado de gestionar el historial médico de las mascotas.
+ */
 @Module({
   imports: [
     InventarioModule,
+    BasedatosModule,
+    ConfigModule,
+    JwtModule,
   ],
-
-  controllers: [
-    HistorialMedicoController,
-  ],
-
-  providers: [
-    HistorialMedicoService,
-  ],
+  controllers: [HistorialMedicoController],
+  providers: [HistorialMedicoService],
+  exports: [HistorialMedicoService],
 })
 export class HistorialMedicoModule {}
