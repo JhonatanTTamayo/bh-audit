@@ -14,6 +14,7 @@ import { InventarioModule } from './modulos/inventario/inventario.module';
 import { MascotasModule } from './modulos/mascotas/mascota.module';
 import { RolesModule } from './modulos/roles/roles.module';
 import { UsuariosModule } from './modulos/usuarios/usuarios.module';
+import { ReportesModule } from './modulos/reportes/reportes.module';
 
 /**
  * Modulo raiz del microservicio bh-core.
@@ -37,6 +38,7 @@ import { UsuariosModule } from './modulos/usuarios/usuarios.module';
     HistorialMedicoModule,
     FacturacionModule,
     CitasModule,
+    ReportesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
