@@ -6,6 +6,7 @@ import { BasedatosModule } from '../../basedatos/basedatos.module';
 import { CorreosModule } from '../correos/correos.module';
 import { AutenticacionController } from './autenticacion.controller';
 import { AutenticacionService } from './autenticacion.service';
+import { AuditModule } from '../audit/audit.module';
 
 /**
  * Módulo de autenticación.
@@ -14,6 +15,7 @@ import { AutenticacionService } from './autenticacion.service';
   imports: [
     BasedatosModule,
     CorreosModule,
+    AuditModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'clave_local_temporal',
       signOptions: {

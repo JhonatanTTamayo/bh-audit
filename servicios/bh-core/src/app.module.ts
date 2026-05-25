@@ -15,7 +15,8 @@ import { MascotasModule } from './modulos/mascotas/mascota.module';
 import { RolesModule } from './modulos/roles/roles.module';
 import { UsuariosModule } from './modulos/usuarios/usuarios.module';
 import { ReportesModule } from './modulos/reportes/reportes.module';
-
+import { VacunasModule } from './modulos/vacunas/vacunas.module';
+import { AuditModule } from './modulos/audit/audit.module';
 /**
  * Modulo raiz del microservicio bh-core.
  * Centraliza la carga de los modulos principales del sistema.
@@ -39,6 +40,8 @@ import { ReportesModule } from './modulos/reportes/reportes.module';
     FacturacionModule,
     CitasModule,
     ReportesModule,
+    VacunasModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService],
