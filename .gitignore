@@ -1,25 +1,30 @@
-# Node / NestJS
-node_modules/
-servicios/bh-core/node_modules/
+﻿# Compiled files
+target/
+*.class
+*.jar
+*.war
+*.ear
 
-# Build
-dist/
-servicios/bh-core/dist/
-
-# Env
-.env
-*.env
-!.env.example
+# IDE files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
 
 # Logs
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
+*.log
+logs/
 
-# IDE
-.vscode/
-.idea/
-
-# Sistema
+# OS files
 .DS_Store
 Thumbs.db
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Docker
+*.tar
