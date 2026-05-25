@@ -1,29 +1,37 @@
 import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 
 import { FiltroTrazabilidadDto } from './dto/filtro-trazabilidad.dto';
 
 @Injectable()
 export class ReportesService {
 
-  constructor(
-    private readonly httpService: HttpService,
-  ) {}
-
   async obtenerReporteTrazabilidad(
     filtros: FiltroTrazabilidadDto,
   ) {
 
-    const respuesta = await firstValueFrom(
-      this.httpService.get(
-        'http://bh-audit:3001/auditoria',
-        {
-          params: filtros,
-        },
-      ),
-    );
-
-    return respuesta.data;
+    /* este codigo sirve para  vereficar que si este funcionando el endpoint y que el pdf se este generando con datos simulados ya que el bh-audit no tiene nada aun*/
+    return [
+      {
+        usuario: 'admin@bh.com',
+        rol: 'ADMINISTRADOR',
+        accion: 'CREACION_CITA',
+        modulo: 'CITAS',
+        fecha: 'Tue May 05 2026 12:25:09 GMT-0500 (hora estándar de Colombia)',
+      },
+      {
+        usuario: 'recepcion@bh.com',
+        rol: 'RECEPCIONISTA',
+        accion: 'ANULACION_FACTURA',
+        modulo: 'FACTURACION',
+        fecha: 'Wed May 20 2026 09:45:09 GMT-0500 (hora estándar de Colombia)',
+      },
+      {
+        usuario: 'vet@bh.com',
+        rol: 'VETERINARIO',
+        accion: 'CREACION_HISTORIAL',
+        modulo: 'HISTORIAL_MEDICO',
+        fecha: new Date(),
+      },
+    ];
   }
 }
