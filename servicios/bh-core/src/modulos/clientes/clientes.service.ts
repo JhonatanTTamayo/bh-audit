@@ -7,6 +7,15 @@ import { ActualizarClienteDto } from './dto/actualizar-cliente.dto';
 export class ClientesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Crea un cliente validando duplicados por correo o documento.
+   *
+   * Si existe un usuario con rol CLIENTE y el mismo correo, lo vincula
+   * automaticamente al nuevo cliente.
+   *
+   * @param dto Datos del cliente.
+   * @returns Cliente creado.
+   */
   async crearCliente(dto: CrearClienteDto) {
     const clienteExistente = await this.prisma.cliente.findFirst({
       where: {
@@ -39,6 +48,11 @@ export class ClientesService {
     });
   }
 
+    /**
+     * Lista todos los clientes ordenados desde el mas reciente.
+     *
+     * @returns Lista de clientes.
+     */
     async listarClientes() {
         return this.prisma.cliente.findMany({
             orderBy: {
@@ -47,6 +61,13 @@ export class ClientesService {
         });
     }
 
+    /**
+     * Actualiza un cliente validando que correo y documento no queden duplicados.
+     *
+     * @param clienteId Identificador del cliente.
+     * @param dto Datos parciales a actualizar.
+     * @returns Cliente actualizado con mensaje de confirmacion.
+     */
     async actualizarCliente(clienteId: string,dto: ActualizarClienteDto) {
     const cliente = await this.prisma.cliente.findUnique({where: {id: clienteId,},
     });
@@ -112,6 +133,13 @@ export class ClientesService {
     };
     }
 
+    /**
+     * Obtiene un cliente por ID y limita el acceso del rol CLIENTE a sus datos.
+     *
+     * @param clienteId Identificador del cliente.
+     * @param usuario Usuario autenticado que solicita la informacion.
+     * @returns Cliente encontrado.
+     */
     async obtenerClientePorId(clienteId: string,usuario: any,) {
     const cliente = await this.prisma.cliente.findUnique({where: {id: clienteId,}
     });

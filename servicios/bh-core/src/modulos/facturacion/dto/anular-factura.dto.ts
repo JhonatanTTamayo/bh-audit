@@ -1,6 +1,11 @@
 // dto/anular-factura.dto.ts
 import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
+/**
+ * DTO usado para anular una factura.
+ *
+ * @class AnularFacturaDto
+ */
 export class AnularFacturaDto {
     @IsString()
     @IsNotEmpty()

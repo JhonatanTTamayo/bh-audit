@@ -10,4 +10,9 @@ import { InventarioService } from './inventario.service';
 
   exports: [InventarioService],
 })
+/**
+ * Modulo que agrupa la gestion de inventario.
+ *
+ * @class InventarioModule
+ */
 export class InventarioModule {}

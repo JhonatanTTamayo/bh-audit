@@ -9,6 +9,9 @@ import {
 /**
  * DTO para registrar una vacuna aplicada dentro del historial médico de la mascota.
  */
+/**
+ * @class CrearVacunaDto
+ */
 export class CrearVacunaDto {
   @IsString()
   @IsNotEmpty({ message: 'El nombre de la vacuna es obligatorio' })

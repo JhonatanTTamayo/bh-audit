@@ -8,6 +8,8 @@ import { AppModule } from './app.module';
  *
  * Configura el prefijo global, CORS, Swagger y las validaciones globales
  * para los DTOs del microservicio.
+ *
+ * @returns Promesa que se resuelve cuando la aplicacion queda escuchando.
  */
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

@@ -17,6 +17,11 @@ export enum TipoProductoDto {
   INSUMO_QUIRURGICO = 'INSUMO_QUIRURGICO',
 }
 
+/**
+ * DTO usado para crear productos de inventario.
+ *
+ * @class CrearProductoDto
+ */
 export class CrearProductoDto {
 
   @IsString({

@@ -12,6 +12,9 @@ import { RequestConUsuario } from './interfaces/request-con-usuario.interface';
 /**
  * Controlador encargado de exponer los endpoints de autenticación.
  */
+/**
+ * @class AutenticacionController
+ */
 @Controller('auth')
 export class AutenticacionController {
   constructor(private readonly autenticacionService: AutenticacionService) {}
@@ -21,6 +24,9 @@ export class AutenticacionController {
    *
    * Ruta:
    * POST /bh-core/v1/auth/registro
+   *
+   * @param registroDto Datos necesarios para crear la cuenta.
+   * @returns Usuario creado y mensaje de verificacion.
    */
   @Post('registro')
   async registrar(@Body() registroDto: RegistroUsuarioDto) {
@@ -32,6 +38,9 @@ export class AutenticacionController {
    *
    * Ruta:
    * POST /bh-core/v1/auth/verificar-correoo
+   *
+   * @param verificarCorreoDto Correo y codigo de verificacion.
+   * @returns Usuario actualizado con correo verificado.
    */
   @Post('verificar-correo')
   async verificarCorreo(@Body() verificarCorreoDto: VerificarCorreoDto) {
@@ -43,6 +52,9 @@ export class AutenticacionController {
    *
    * Ruta:
    * POST /bh-core/v1/auth/login
+   *
+   * @param loginDto Credenciales del usuario.
+   * @returns Token JWT y datos basicos del usuario.
    */
   @Post('login')
   async iniciarSesion(@Body() loginDto: LoginDto) {
@@ -54,6 +66,9 @@ export class AutenticacionController {
    *
    * Ruta:
    * GET /bh-core/v1/autenticacion/admin
+   *
+   * @param request Peticion autenticada con los datos del usuario.
+   * @returns Mensaje de acceso y datos del usuario autenticado.
    */
   @Get('admin')
   @Roles('ADMIN')

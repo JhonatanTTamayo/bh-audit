@@ -4,6 +4,8 @@ import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 /**
  * DTO para recibir filtros opcionales al listar usuarios.
+ *
+ * @class FiltroUsuariosDto
  */
 export class FiltroUsuariosDto {
   @IsOptional()

@@ -11,4 +11,9 @@ import { ReportesService } from './reportes.service';
 
   providers: [ReportesService],
 })
+/**
+ * Modulo que agrupa la generacion de reportes.
+ *
+ * @class ReportesModule
+ */
 export class ReportesModule {}

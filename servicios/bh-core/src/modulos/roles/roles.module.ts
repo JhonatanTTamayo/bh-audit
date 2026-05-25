@@ -9,4 +9,9 @@ import { Module } from '@nestjs/common';
  * de permisos y autorización.
  */
 @Module({})
+/**
+ * Modulo reservado para la gestion de roles.
+ *
+ * @class RolesModule
+ */
 export class RolesModule {}

@@ -19,6 +19,11 @@ import { FiltroTrazabilidadDto } from './dto/filtro-trazabilidad.dto';
 
 import { PdfTrazabilidadHelper } from './helpers/pdf-trazabilidad.helper';
 
+/**
+ * Controlador encargado de exponer endpoints de reportes.
+ *
+ * @class ReportesController
+ */
 @ApiTags('Reportes')
 
 @Controller('reportes')
@@ -28,6 +33,13 @@ export class ReportesController {
     private readonly reportesService: ReportesService,
   ) {}
 
+  /**
+   * Genera y descarga un PDF de trazabilidad con los filtros recibidos.
+   *
+   * @param filtros Rango de fechas y filtros opcionales de trazabilidad.
+   * @param res Respuesta HTTP usada para enviar el archivo PDF.
+   * @returns Promesa que finaliza cuando el PDF se escribe en la respuesta.
+   */
   @Get('trazabilidad/pdf')
 
   @ApiOperation({

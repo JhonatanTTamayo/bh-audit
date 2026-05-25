@@ -7,13 +7,20 @@ import { Roles } from '../autenticacion/decoradores/roles.decorador';
 import { ActualizarClienteDto } from './dto/actualizar-cliente.dto';
 import { RequestConUsuario } from '../autenticacion/interfaces/request-con-usuario.interface';
 
+/**
+ * Controlador encargado de exponer endpoints de clientes.
+ *
+ * @class ClientesController
+ */
 @Controller('clientes')
 export class ClientesController {
     constructor(private readonly clientesService: ClientesService) {}
 
     /**
-     * 
-     * Crear un cliente
+     * Crea un cliente desde el rol recepcionista.
+     *
+     * @param dto Datos requeridos para crear el cliente.
+     * @returns Cliente creado.
      */
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,8 +30,10 @@ export class ClientesController {
     }
 
     /**
-    * Listar clientes
-    */
+     * Lista todos los clientes registrados.
+     *
+     * @returns Arreglo de clientes ordenado por fecha de creacion.
+     */
     @Get()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('RECEPCIONISTA', 'ADMIN')
@@ -33,8 +42,12 @@ export class ClientesController {
     }
 
     /**
-     * Actualizar cliente
-    */
+     * Actualiza los datos de un cliente existente.
+     *
+     * @param clienteId Identificador UUID del cliente.
+     * @param dto Datos parciales a actualizar.
+     * @returns Cliente actualizado con mensaje de confirmacion.
+     */
     @Put(':clienteId')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('RECEPCIONISTA')
@@ -46,7 +59,11 @@ export class ClientesController {
     }
 
     /**
-     * Obtener cliente por ID
+     * Obtiene un cliente por ID respetando las reglas de acceso del rol.
+     *
+     * @param clienteId Identificador UUID del cliente.
+     * @param request Peticion autenticada con los datos del usuario.
+     * @returns Datos del cliente solicitado.
      */
     @Get(':clienteId')
     @UseGuards(JwtAuthGuard, RolesGuard)

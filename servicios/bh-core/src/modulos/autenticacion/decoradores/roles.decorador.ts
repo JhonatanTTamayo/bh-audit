@@ -7,5 +7,8 @@ export const ROLES_KEY = 'roles';
 
 /**
  * Define los roles permitidos para acceder a un endpoint.
+ *
+ * @param roles Roles autorizados para el recurso.
+ * @returns Decorador de metadatos usado por RolesGuard.
  */
 export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);

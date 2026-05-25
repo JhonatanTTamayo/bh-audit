@@ -14,6 +14,9 @@ import {
 /**
  * DTO que representa un medicamento prescrito dentro de una consulta.
  */
+/**
+ * @class MedicamentoPrescritoDto
+ */
 export class MedicamentoPrescritoDto {
   @IsUUID('4', { message: 'El ID del producto no es válido' })
   productoId!: string;
@@ -25,6 +28,9 @@ export class MedicamentoPrescritoDto {
  
 /**
  * DTO para registrar el resultado de una consulta en el historial médico.
+ */
+/**
+ * @class CrearHistorialMedicoDto
  */
 export class CrearHistorialMedicoDto {
   @IsString()

@@ -23,6 +23,12 @@ export class VacunasService {
    * Registra una vacuna aplicada dentro del historial médico de la mascota.
    * Solo puede ser ejecutado por el veterinario autenticado.
    */
+  /**
+   * @param mascotaId Identificador de la mascota.
+   * @param dto Datos de la vacuna aplicada.
+   * @param usuario Veterinario autenticado.
+   * @returns Vacuna registrada y formateada.
+   */
   async registrarVacuna(
     mascotaId: string,
     dto: CrearVacunaDto,
@@ -59,6 +65,15 @@ export class VacunasService {
     return this.formatearVacuna(vacuna);
   }
 
+  /**
+   * Notifica a bh-audit el registro de una vacuna cuando la integracion existe.
+   */
+  /**
+   * @param usuario Veterinario autenticado.
+   * @param entidadId Identificador de la vacuna creada.
+   * @param mascotaId Identificador de la mascota.
+   * @returns Promesa sin valor cuando termina el intento de envio.
+   */
   private async notificarAuditoria(
     usuario: JwtPayload,
     entidadId: string,
@@ -91,6 +106,13 @@ export class VacunasService {
     }
   }
 
+  /**
+   * Normaliza la respuesta de vacuna con fechas legibles y datos del veterinario.
+   */
+  /**
+   * @param vacuna Vacuna retornada por Prisma.
+   * @returns Objeto de respuesta de vacuna.
+   */
   private formatearVacuna(vacuna: any) {
     return {
       id: vacuna.id,

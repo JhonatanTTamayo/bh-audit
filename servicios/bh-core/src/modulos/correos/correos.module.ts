@@ -13,4 +13,9 @@ import { CorreosService } from './correos.service';
   providers: [CorreosService],
   exports: [CorreosService],
 })
+/**
+ * Modulo que expone el servicio de envio de correos.
+ *
+ * @class CorreosModule
+ */
 export class CorreosModule {}

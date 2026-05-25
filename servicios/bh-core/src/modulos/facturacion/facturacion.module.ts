@@ -13,4 +13,9 @@ import { AuditModule } from '../audit/audit.module';
     controllers: [FacturacionController],
     providers: [FacturacionService],
 })
+/**
+ * Modulo que agrupa la gestion de facturacion.
+ *
+ * @class FacturacionModule
+ */
 export class FacturacionModule {}

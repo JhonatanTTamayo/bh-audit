@@ -14,6 +14,9 @@ import {
 /**
  * DTO que representa un medicamento prescrito al actualizar el historial.
  */
+/**
+ * @class MedicamentoPrescritoUpdateDto
+ */
 export class MedicamentoPrescritoUpdateDto {
   @IsUUID('4', { message: 'El ID del producto no es válido' })
   productoId!: string;
@@ -25,6 +28,9 @@ export class MedicamentoPrescritoUpdateDto {
  
 /**
  * DTO para corregir un registro médico dentro de las primeras 24 horas.
+ */
+/**
+ * @class ActualizarHistorialMedicoDto
  */
 export class ActualizarHistorialMedicoDto {
   @IsString()

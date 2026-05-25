@@ -4,6 +4,8 @@ import { firstValueFrom } from 'rxjs';
 
 /**
  * Acciones relevantes que bh-core debe notificar a bh-audit.
+ *
+ * @enum TipoAccionAudit
  */
 export enum TipoAccionAudit {
   REGISTRO_USUARIO = 'REGISTRO_USUARIO',
@@ -31,6 +33,8 @@ export enum TipoAccionAudit {
 
 /**
  * DTO interno para registrar eventos desde bh-core.
+ *
+ * @interface RegistrarEventoDto
  */
 export interface RegistrarEventoDto {
   tipoAccion: TipoAccionAudit;
@@ -79,6 +83,15 @@ export class AuditService {
 
   constructor(private readonly httpService: HttpService) {}
 
+  /**
+   * Envia un evento de auditoria al microservicio bh-audit.
+   *
+   * Construye un payload compatible con los campos usados por bh-core
+   * y falla de forma controlada para no interrumpir la operacion principal.
+   *
+   * @param dto Datos del evento que debe enviarse a auditoria.
+   * @returns Promesa sin valor cuando termina el intento de envio.
+   */
   async registrarEvento(dto: RegistrarEventoDto): Promise<void> {
     const payload = {
       usuarioId: dto.usuarioId,

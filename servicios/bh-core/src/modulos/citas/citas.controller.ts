@@ -39,6 +39,8 @@ import { FiltroCitasDto } from './dto/filtro-citas.dto';
 
 /**
  * Controlador encargado de exponer endpoints relacionados con citas.
+ *
+ * @class CitasController
  */
 @Controller('citas')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -52,6 +54,10 @@ export class CitasController {
    *
    * Ruta:
    * GET /bh-core/v1/citas
+   *
+   * @param filtros Filtros opcionales para consultar citas.
+   * @param request Peticion autenticada con los datos del usuario.
+   * @returns Lista paginada de citas visibles para el rol autenticado.
    */
   @Get()
   @Roles('CLIENTE', 'VETERINARIO', 'RECEPCIONISTA', 'ADMIN')
@@ -87,6 +93,9 @@ export class CitasController {
    *
    * Ruta:
    * GET /bh-core/v1/citas/disponibilidad
+   *
+   * @param query Parametros de consulta con veterinario y fecha.
+   * @returns Horarios disponibles para el veterinario indicado.
    */
   @Get('disponibilidad')
   @Roles('RECEPCIONISTA', 'CLIENTE')
@@ -121,6 +130,10 @@ export class CitasController {
    *
    * Ruta:
    * GET /bh-core/v1/citas/:citaId
+   *
+   * @param citaId Identificador UUID de la cita.
+   * @param request Peticion autenticada con los datos del usuario.
+   * @returns Datos completos de la cita solicitada.
    */
   @Get(':citaId')
   @Roles('CLIENTE', 'VETERINARIO', 'RECEPCIONISTA', 'ADMIN')
@@ -148,6 +161,11 @@ export class CitasController {
    *
    * Ruta:
    * PATCH /bh-core/v1/citas/:citaId/cancelar
+   *
+   * @param citaId Identificador UUID de la cita.
+   * @param cancelarCitaDto Datos con el motivo de cancelacion.
+   * @param request Peticion autenticada con los datos del usuario.
+   * @returns Cita actualizada con estado cancelado.
    */
   @Patch(':citaId/cancelar')
   @Roles('RECEPCIONISTA', 'ADMIN')
@@ -186,6 +204,10 @@ export class CitasController {
    *
    * Ruta:
    * PATCH /bh-core/v1/citas/:citaId/finalizar
+   *
+   * @param citaId Identificador UUID de la cita.
+   * @param request Peticion autenticada con los datos del usuario.
+   * @returns Cita actualizada con estado finalizado.
    */
   @Patch(':citaId/finalizar')
   @Roles('VETERINARIO')
@@ -216,6 +238,10 @@ export class CitasController {
    *
    * Ruta:
    * POST /bh-core/v1/citas
+   *
+   * @param crearCitaDto Datos de mascota, veterinario, servicios, fecha, hora y pago.
+   * @param request Peticion autenticada con los datos del usuario.
+   * @returns Cita creada con pago registrado.
    */
   @Post()
   @Roles('CLIENTE', 'RECEPCIONISTA')

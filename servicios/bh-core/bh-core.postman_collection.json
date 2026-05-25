@@ -1,0 +1,1171 @@
+{
+  "info": {
+    "_postman_id": "5cddad42-9a6e-4c8e-9a9b-bhcore000001",
+    "name": "BH Core API",
+    "description": "Coleccion de endpoints del microservicio bh-core. Todas las rutas usan el prefijo /bh-core/v1.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/bh-core/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usuarioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "rolId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clienteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mascotaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "registroId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "vacunaProductoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "veterinarioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "servicioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "citaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "atencionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "facturaId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Root",
+      "item": [
+        {
+          "name": "Health bh-core",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": "Verifica que bh-core este funcionando."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Autenticacion",
+      "item": [
+        {
+          "name": "Registrar usuario",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreCompleto\": \"Usuario Demo\",\n  \"correo\": \"usuario.demo@correo.com\",\n  \"telefono\": \"3000000000\",\n  \"contrasena\": \"123456\",\n  \"rolId\": \"{{rolId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "registro"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verificar correo",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"usuario.demo@correo.com\",\n  \"codigo\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verificar-correo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verificar-correo"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"usuario.demo@correo.com\",\n  \"contrasena\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Validar acceso administrador",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "admin"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuarios Admin",
+      "item": [
+        {
+          "name": "Listar cuentas pendientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/usuarios/pendientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "usuarios",
+                "pendientes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Aprobar cuenta",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/usuarios/{{usuarioId}}/aprobar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "usuarios",
+                "{{usuarioId}}",
+                "aprobar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Rechazar cuenta",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"No cumple con los requisitos de aprobacion.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/usuarios/{{usuarioId}}/rechazar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "usuarios",
+                "{{usuarioId}}",
+                "rechazar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Suspender cuenta",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/usuarios/{{usuarioId}}/suspender",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "usuarios",
+                "{{usuarioId}}",
+                "suspender"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/usuarios?rol=VETERINARIO&estado=ACTIVO&page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "usuarios"
+              ],
+              "query": [
+                {
+                  "key": "rol",
+                  "value": "VETERINARIO"
+                },
+                {
+                  "key": "estado",
+                  "value": "ACTIVO"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreCompleto\": \"Admin Demo\",\n  \"correo\": \"admin.demo@correo.com\",\n  \"telefono\": \"3000000001\",\n  \"contrasena\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/usuarios/administradores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "usuarios",
+                "administradores"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "Crear cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Demo\",\n  \"email\": \"cliente.demo@correo.com\",\n  \"telefono\": \"3111111111\",\n  \"documento\": \"1000000000\",\n  \"direccion\": \"Calle 1 # 2-3\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar clientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener cliente por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{clienteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{clienteId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar cliente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telefono\": \"3222222222\",\n  \"direccion\": \"Carrera 4 # 5-6\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{clienteId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{clienteId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mascotas",
+      "item": [
+        {
+          "name": "Crear mascota",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Milo\",\n  \"especie\": \"Canino\",\n  \"raza\": \"Criollo\",\n  \"color\": \"Cafe\",\n  \"fechaNacimiento\": \"2022-05-10\",\n  \"peso\": 12.5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{clienteId}}/mascotas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "{{clienteId}}",
+                "mascotas"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventario",
+      "item": [
+        {
+          "name": "Crear producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Amoxicilina 250mg\",\n  \"tipo\": \"MEDICAMENTO\",\n  \"stock\": 50,\n  \"stockMinimo\": 10,\n  \"precio\": 12000,\n  \"fechaVencimiento\": \"2027-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventario",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventario"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inventario?nombre=amoxi&tipo=MEDICAMENTO",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventario"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "amoxi"
+                },
+                {
+                  "key": "tipo",
+                  "value": "MEDICAMENTO"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Stock bajo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inventario/stock-bajo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventario",
+                "stock-bajo"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Proximos a vencer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inventario/proximos-vencer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventario",
+                "proximos-vencer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener producto por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inventario/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventario",
+                "{{productoId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar producto",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockMinimo\": 15,\n  \"precio\": 13500\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventario/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventario",
+                "{{productoId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ajustar stock",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventario/{{productoId}}/stock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventario",
+                "{{productoId}}",
+                "stock"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar producto",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inventario/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventario",
+                "{{productoId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Historial Medico",
+      "item": [
+        {
+          "name": "Prescribir medicamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": \"{{productoId}}\",\n  \"cantidad\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mascotas/historial-medico/prescribir",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mascotas",
+                "historial-medico",
+                "prescribir"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear registro historial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivoConsulta\": \"Control general\",\n  \"diagnostico\": \"Paciente estable\",\n  \"tratamiento\": \"Observacion y control\",\n  \"pesoMascota\": 12.8,\n  \"fechaProximaVisita\": \"2026-07-01\",\n  \"medicamentos\": [\n    {\n      \"productoId\": \"{{productoId}}\",\n      \"cantidad\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mascotas/{{mascotaId}}/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mascotas",
+                "{{mascotaId}}",
+                "historial"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar historial de mascota",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/mascotas/{{mascotaId}}/historial?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mascotas",
+                "{{mascotaId}}",
+                "historial"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar registro historial",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivoConsulta\": \"Control actualizado\",\n  \"diagnostico\": \"Paciente estable\",\n  \"tratamiento\": \"Control en casa\",\n  \"pesoMascota\": 13,\n  \"fechaProximaVisita\": \"2026-07-15\",\n  \"medicamentos\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mascotas/historial/{{registroId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mascotas",
+                "historial",
+                "{{registroId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vacunas",
+      "item": [
+        {
+          "name": "Registrar vacuna",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Rabia\",\n  \"fechaAplicacion\": \"2026-06-01\",\n  \"fechaProximaDosis\": \"2027-06-01\",\n  \"productoId\": \"{{vacunaProductoId}}\",\n  \"observaciones\": \"Aplicacion sin novedades\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mascotas/{{mascotaId}}/vacunas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mascotas",
+                "{{mascotaId}}",
+                "vacunas"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Citas",
+      "item": [
+        {
+          "name": "Listar citas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/citas?veterinarioId={{veterinarioId}}&mascotaId={{mascotaId}}&estado=CONFIRMADA&fechaDesde=2026-06-01&fechaHasta=2026-06-30&page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "citas"
+              ],
+              "query": [
+                {
+                  "key": "veterinarioId",
+                  "value": "{{veterinarioId}}"
+                },
+                {
+                  "key": "mascotaId",
+                  "value": "{{mascotaId}}"
+                },
+                {
+                  "key": "estado",
+                  "value": "CONFIRMADA"
+                },
+                {
+                  "key": "fechaDesde",
+                  "value": "2026-06-01"
+                },
+                {
+                  "key": "fechaHasta",
+                  "value": "2026-06-30"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Consultar disponibilidad",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/citas/disponibilidad?veterinarioId={{veterinarioId}}&fecha=2026-06-15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "citas",
+                "disponibilidad"
+              ],
+              "query": [
+                {
+                  "key": "veterinarioId",
+                  "value": "{{veterinarioId}}"
+                },
+                {
+                  "key": "fecha",
+                  "value": "2026-06-15"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener cita por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/citas/{{citaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "citas",
+                "{{citaId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancelar cita",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"El cliente no puede asistir a la cita programada.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/citas/{{citaId}}/cancelar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "citas",
+                "{{citaId}}",
+                "cancelar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Finalizar cita",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/citas/{{citaId}}/finalizar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "citas",
+                "{{citaId}}",
+                "finalizar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear cita",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mascotaId\": \"{{mascotaId}}\",\n  \"veterinarioId\": \"{{veterinarioId}}\",\n  \"fecha\": \"2026-06-15\",\n  \"hora\": \"10:00\",\n  \"servicioIds\": [\n    \"{{servicioId}}\"\n  ],\n  \"pago\": {\n    \"metodo\": \"EFECTIVO\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/citas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "citas"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Facturacion",
+      "item": [
+        {
+          "name": "Crear factura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"atencionId\": \"{{atencionId}}\",\n  \"descuento\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/facturacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "facturacion"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar facturas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/facturacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "facturacion"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte facturacion PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/facturacion/reporte/pdf?inicio=2026-06-01&fin=2026-06-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "facturacion",
+                "reporte",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "inicio",
+                  "value": "2026-06-01"
+                },
+                {
+                  "key": "fin",
+                  "value": "2026-06-30"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener factura por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/facturacion/{{facturaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "facturacion",
+                "{{facturaId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Descargar factura PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/facturacion/{{facturaId}}/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "facturacion",
+                "{{facturaId}}",
+                "pdf"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Anular factura",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivoAnulacion\": \"Factura anulada por error de digitacion.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/facturacion/{{facturaId}}/anular",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "facturacion",
+                "{{facturaId}}",
+                "anular"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "Reporte trazabilidad PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reportes/trazabilidad/pdf?fechaInicio=2026-06-01&fechaFin=2026-06-30&usuario=admin@bh.com&tipoAccion=CREACION_CITA",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reportes",
+                "trazabilidad",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "fechaInicio",
+                  "value": "2026-06-01"
+                },
+                {
+                  "key": "fechaFin",
+                  "value": "2026-06-30"
+                },
+                {
+                  "key": "usuario",
+                  "value": "admin@bh.com"
+                },
+                {
+                  "key": "tipoAccion",
+                  "value": "CREACION_CITA"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

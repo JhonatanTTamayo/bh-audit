@@ -1,8 +1,22 @@
 const PDFDocument = require('pdfkit');
 import { Response } from 'express';
 
+/**
+ * Helper encargado de generar el PDF de trazabilidad.
+ *
+ * @class PdfTrazabilidadHelper
+ */
 export class PdfTrazabilidadHelper {
 
+  /**
+   * Escribe en la respuesta HTTP el reporte PDF de trazabilidad.
+   *
+   * @param res Respuesta HTTP donde se envia el archivo.
+   * @param acciones Acciones de auditoria incluidas en el reporte.
+   * @param fechaInicio Fecha inicial del periodo.
+   * @param fechaFin Fecha final del periodo.
+   * @returns No retorna valor; finaliza el stream del PDF.
+   */
   static generarReporteTrazabilidadPdf(
     res: Response,
     acciones: any[],

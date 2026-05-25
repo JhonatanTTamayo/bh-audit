@@ -1,5 +1,10 @@
 import {IsDateString,IsNumber,IsOptional,IsPositive,IsString,} from 'class-validator';
 
+/**
+ * DTO usado para registrar una mascota asociada a un cliente.
+ *
+ * @class CrearMascotaDto
+ */
 export class CrearMascotaDto {
   @IsString()
   nombre!: string;

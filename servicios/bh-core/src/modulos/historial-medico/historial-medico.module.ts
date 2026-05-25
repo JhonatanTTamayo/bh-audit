@@ -21,4 +21,9 @@ import { HistorialMedicoService } from './historial-medico.service';
   providers: [HistorialMedicoService],
   exports: [HistorialMedicoService],
 })
+/**
+ * Modulo que agrupa la gestion del historial medico.
+ *
+ * @class HistorialMedicoModule
+ */
 export class HistorialMedicoModule {}

@@ -18,6 +18,9 @@ import { CrearVacunaDto } from './dto/crear-vacuna.dto';
 /**
  * Controlador encargado de exponer endpoints de vacunas de mascotas.
  */
+/**
+ * @class VacunasController
+ */
 @Controller('mascotas')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class VacunasController {
@@ -29,6 +32,11 @@ export class VacunasController {
    *
    * Ruta:
    * POST /api/mascotas/:mascotaId/vacunas
+   *
+   * @param mascotaId Identificador UUID de la mascota vacunada.
+   * @param crearVacunaDto Datos de la vacuna aplicada.
+   * @param request Peticion autenticada con el veterinario.
+   * @returns Vacuna registrada.
    */
   @Post(':mascotaId/vacunas')
   @Roles('VETERINARIO')

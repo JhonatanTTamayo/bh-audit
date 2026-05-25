@@ -11,11 +11,19 @@ import { RequestConUsuario } from '../interfaces/request-con-usuario.interface';
 
 /**
  * Guard encargado de validar el token JWT enviado en el header Authorization.
+ *
+ * @class JwtAuthGuard
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
 
+  /**
+   * Valida el token JWT y agrega el payload al request.
+   *
+   * @param context Contexto de ejecucion de NestJS.
+   * @returns `true` cuando el token es valido.
+   */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestConUsuario>();
     const token = this.extraerTokenDesdeHeader(request);
@@ -45,6 +53,9 @@ export class JwtAuthGuard implements CanActivate {
 
   /**
    * Extrae el token JWT desde el header Authorization.
+   *
+   * @param request Request HTTP con headers de autenticacion.
+   * @returns Token JWT o undefined si no existe.
    */
   private extraerTokenDesdeHeader(
     request: RequestConUsuario,

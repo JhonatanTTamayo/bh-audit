@@ -28,4 +28,9 @@ import { CitasService } from './citas.service';
   providers: [CitasService, JwtAuthGuard, RolesGuard],
   exports: [CitasService],
 })
+/**
+ * Modulo que agrupa la gestion de citas.
+ *
+ * @class CitasModule
+ */
 export class CitasModule {}

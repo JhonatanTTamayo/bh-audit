@@ -3,6 +3,8 @@ import { IsDateString, IsUUID } from 'class-validator';
 
 /**
  * DTO para consultar horarios disponibles de un veterinario en una fecha.
+ *
+ * @class ConsultarDisponibilidadDto
  */
 export class ConsultarDisponibilidadDto {
   @ApiProperty({

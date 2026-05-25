@@ -10,4 +10,9 @@ import { AuditService } from './audit.service';
   providers: [AuditService],
   exports: [AuditService],
 })
+/**
+ * Modulo que expone el servicio de integracion con bh-audit.
+ *
+ * @class AuditModule
+ */
 export class AuditModule {}

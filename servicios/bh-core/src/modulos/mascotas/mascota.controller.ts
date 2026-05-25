@@ -7,15 +7,25 @@ import { Roles } from '../autenticacion/decoradores/roles.decorador';
 import { CrearMascotaDto } from './dto/crear-mascota.dto';
 import { MascotasService } from './mascota.service';
 
+/**
+ * Controlador encargado de registrar mascotas asociadas a clientes.
+ *
+ * @class MascotasController
+ */
 @Controller('clientes')
 export class MascotasController {
   constructor(private readonly mascotasService: MascotasService,) {}
 
   /**
-  * Endpoint para registrar una mascota asociada a un cliente.
-  * 
-  * POST: bh-core/v1/clientes/:cliente/mascotas
-  */
+   * Registra una mascota asociada a un cliente existente.
+   *
+   * Ruta:
+   * POST /bh-core/v1/clientes/:clienteId/mascotas
+   *
+   * @param clienteId Identificador del cliente propietario.
+   * @param dto Datos de la mascota a registrar.
+   * @returns Mascota creada.
+   */
 
   @Post(':clienteId/mascotas')
   @UseGuards(JwtAuthGuard, RolesGuard)
