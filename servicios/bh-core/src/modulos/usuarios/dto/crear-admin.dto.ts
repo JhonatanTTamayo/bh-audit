@@ -1,6 +1,11 @@
 import {IsEmail,IsNotEmpty,IsOptional,IsString,MinLength} 
 from 'class-validator';
 
+/**
+ * DTO usado para crear cuentas administradoras.
+ *
+ * @class CreateAdminDto
+ */
 export class CreateAdminDto {
   @IsString({ message: 'El nombre completo debe ser texto.',})
   @IsNotEmpty({message: 'El nombre completo es obligatorio.',})

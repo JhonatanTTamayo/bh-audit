@@ -4,6 +4,11 @@ import {
   IsString,
 } from 'class-validator';
 
+/**
+ * DTO usado para filtrar el reporte de trazabilidad.
+ *
+ * @class FiltroTrazabilidadDto
+ */
 export class FiltroTrazabilidadDto {
 
   @IsDateString()

@@ -46,4 +46,9 @@ import { AuditModule } from './modulos/audit/audit.module';
   controllers: [AppController],
   providers: [AppService],
 })
+/**
+ * Modulo raiz que agrupa la configuracion global y los modulos funcionales.
+ *
+ * @class AppModule
+ */
 export class AppModule {}

@@ -31,6 +31,10 @@ export class AutenticacionService {
    * Registra un nuevo usuario y envía un código de verificación
    * al correo electrónico registrado.
    */
+  /**
+   * @param registroDto Datos necesarios para registrar la cuenta.
+   * @returns Usuario creado y mensaje para verificar el correo.
+   */
   async registrar(registroDto: RegistroUsuarioDto) {
     const usuarioExistente = await this.prisma.usuario.findUnique({
       where: {
@@ -120,6 +124,10 @@ export class AutenticacionService {
   /**
    * Inicia sesión validando correo, contraseña, verificación y estado del usuario.
    */
+  /**
+   * @param loginDto Credenciales del usuario.
+   * @returns Token JWT y datos basicos del usuario autenticado.
+   */
   async iniciarSesion(loginDto: LoginDto) {
     const usuario = await this.prisma.usuario.findUnique({
       where: {
@@ -189,6 +197,10 @@ export class AutenticacionService {
   /**
    * Verifica el correo electrónico de un usuario mediante
    * el código enviado por correo.
+   */
+  /**
+   * @param verificarCorreoDto Correo y codigo de verificacion.
+   * @returns Usuario actualizado y mensaje de confirmacion.
    */
   async verificarCorreo(verificarCorreoDto: VerificarCorreoDto) {
     const usuario = await this.prisma.usuario.findUnique({
@@ -271,6 +283,9 @@ export class AutenticacionService {
   /**
    * Genera un código numérico de seis dígitos.
    */
+  /**
+   * @returns Codigo numerico como texto.
+   */
   private generarCodigoVerificacion(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
@@ -279,6 +294,9 @@ export class AutenticacionService {
    * Genera la fecha de expiración del código.
    *
    * Actualmente el código expira en 15 minutos.
+   */
+  /**
+   * @returns Fecha de expiracion del codigo.
    */
   private generarFechaExpiracionCodigo(): Date {
     const minutosExpiracion = 15;

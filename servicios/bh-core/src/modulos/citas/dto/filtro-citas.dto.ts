@@ -12,6 +12,8 @@ import {
 
 /**
  * DTO para recibir filtros opcionales al listar citas.
+ *
+ * @class FiltroCitasDto
  */
 export class FiltroCitasDto {
   @ApiPropertyOptional({

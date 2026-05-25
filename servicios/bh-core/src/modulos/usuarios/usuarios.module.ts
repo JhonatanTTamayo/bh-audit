@@ -27,4 +27,9 @@ import { CorreosModule } from '../correos/correos.module';
   providers: [UsuariosService],
   exports: [UsuariosService],
 })
+/**
+ * Modulo que agrupa la administracion de usuarios.
+ *
+ * @class UsuariosModule
+ */
 export class UsuariosModule {}

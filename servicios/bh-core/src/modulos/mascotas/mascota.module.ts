@@ -17,4 +17,9 @@ import { MascotasService } from './mascota.service';
     MascotasService,
   ],
 })
+/**
+ * Modulo que agrupa la gestion de mascotas.
+ *
+ * @class MascotasModule
+ */
 export class MascotasModule {}

@@ -27,4 +27,9 @@ import { AuditModule } from '../audit/audit.module';
   providers: [AutenticacionService, JwtAuthGuard, RolesGuard],
   exports: [AutenticacionService, JwtModule ,JwtAuthGuard, RolesGuard],
 })
+/**
+ * Modulo que agrupa autenticacion, JWT, correos y acceso a base de datos.
+ *
+ * @class AutenticacionModule
+ */
 export class AutenticacionModule {}

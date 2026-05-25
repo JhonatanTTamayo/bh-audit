@@ -11,11 +11,19 @@ import { RequestConUsuario } from '../interfaces/request-con-usuario.interface';
 
 /**
  * Guard encargado de validar si el usuario autenticado tiene un rol permitido.
+ *
+ * @class RolesGuard
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
+  /**
+   * Verifica que el rol del usuario este dentro de los roles permitidos.
+   *
+   * @param context Contexto de ejecucion de NestJS.
+   * @returns `true` cuando el rol tiene acceso.
+   */
   canActivate(context: ExecutionContext): boolean {
     const rolesPermitidos = this.reflector.getAllAndOverride<string[]>(
       ROLES_KEY,

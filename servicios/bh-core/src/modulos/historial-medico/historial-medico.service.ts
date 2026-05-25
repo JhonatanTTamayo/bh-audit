@@ -28,6 +28,11 @@ export class HistorialMedicoService {
   /**
    * Prescribe un medicamento descontando stock del inventario.
    */
+  /**
+   * @param productoId Identificador del producto prescrito.
+   * @param cantidad Cantidad a descontar del inventario.
+   * @returns Mensaje de confirmacion de prescripcion.
+   */
   async prescribirMedicamento(
     productoId: string,
     cantidad: number,
@@ -41,6 +46,12 @@ export class HistorialMedicoService {
 
   /**
    * Registra el resultado de una consulta en el historial médico de la mascota.
+   */
+  /**
+   * @param mascotaId Identificador de la mascota.
+   * @param dto Datos clinicos del registro medico.
+   * @param usuario Veterinario autenticado que crea el registro.
+   * @returns Registro medico creado y formateado.
    */
   async crearRegistro(
     mascotaId: string,
@@ -116,6 +127,12 @@ export class HistorialMedicoService {
   /**
    * Corrige un registro médico únicamente durante las primeras 24 horas.
    * Solo puede ser ejecutado por el veterinario que creó el registro.
+   */
+  /**
+   * @param registroId Identificador del registro medico.
+   * @param dto Datos corregidos del registro.
+   * @param usuario Veterinario autenticado que solicita la edicion.
+   * @returns Registro medico actualizado y formateado.
    */
   async actualizarRegistro(
     registroId: string,
@@ -196,6 +213,12 @@ export class HistorialMedicoService {
   /**
    * Lista el historial médico completo de una mascota ordenado cronológicamente.
    */
+  /**
+   * @param mascotaId Identificador de la mascota.
+   * @param filtros Parametros de paginacion.
+   * @param usuario Usuario autenticado que consulta el historial.
+   * @returns Historial medico paginado.
+   */
   async listarHistorial(
     mascotaId: string,
     filtros: FiltroHistorialMedicoDto,
@@ -248,6 +271,19 @@ export class HistorialMedicoService {
     };
   }
 
+  /**
+   * Notifica a bh-audit los cambios relevantes del historial medico.
+   *
+   * Si no hay configuracion de auditoria o el servicio falla, no bloquea
+   * la operacion clinica principal.
+   */
+  /**
+   * @param usuario Usuario autenticado que realiza la accion.
+   * @param entidadId Identificador del registro medico.
+   * @param mascotaId Identificador de la mascota.
+   * @param tipoAccion Tipo de accion enviada a auditoria.
+   * @returns Promesa sin valor cuando termina el intento de envio.
+   */
   private async notificarAuditoria(
     usuario: JwtPayload,
     entidadId: string,
@@ -281,6 +317,12 @@ export class HistorialMedicoService {
     }
   }
 
+  /**
+   * Define las relaciones de Prisma que se cargan para armar respuestas.
+   */
+  /**
+   * @returns Relaciones Prisma usadas para consultar historial medico.
+   */
   private incluirRelaciones() {
     return {
       veterinario: true,
@@ -293,6 +335,13 @@ export class HistorialMedicoService {
     };
   }
 
+  /**
+   * Normaliza un registro medico para exponer solo los datos necesarios.
+   */
+  /**
+   * @param registro Registro medico retornado por Prisma.
+   * @returns Objeto normalizado para respuesta HTTP.
+   */
   private formatearRegistro(registro: any) {
     return {
       id: registro.id,

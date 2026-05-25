@@ -13,7 +13,12 @@ export class FacturacionService {
         private readonly auditService: AuditService,
     ) {}
 
-    // SCRUM-50
+    /**
+     * Crea una factura para una atencion, calcula totales y registra auditoria.
+     *
+     * @param dto Datos para crear factura.
+     * @returns Factura creada.
+     */
     async crearFactura(dto: CrearFacturaDto) {
         const atencion = await this.prisma.atencion.findUnique({
             where: { id: dto.atencionId },
@@ -67,7 +72,12 @@ const factura = await this.prisma.factura.create({
         return factura;
     }
 
-    // SCRUM-51
+    /**
+     * Obtiene una factura por ID o lanza error si no existe.
+     *
+     * @param id Identificador de la factura.
+     * @returns Factura encontrada.
+     */
     async obtenerFacturaPorId(id: string) {
         const factura = await this.prisma.factura.findUnique({ where: { id } });
 
@@ -78,13 +88,23 @@ const factura = await this.prisma.factura.create({
         return factura;
     }
 
-    // Listar facturas
+/**
+ * Lista todas las facturas ordenadas desde la mas reciente.
+ *
+ * @returns Lista de facturas.
+ */
 async listarFacturas() {
     return this.prisma.factura.findMany({
         orderBy: { creadoEn: 'desc' },
     });
 }
-    // SCRUM-52
+    /**
+     * Anula una factura existente y registra el motivo en auditoria.
+     *
+     * @param id Identificador de la factura.
+     * @param dto Datos con el motivo de anulacion.
+     * @returns Factura anulada.
+     */
     async anularFactura(id: string, dto: AnularFacturaDto) {
         const factura = await this.prisma.factura.findUnique({ where: { id } });
 
@@ -116,7 +136,13 @@ async listarFacturas() {
         return facturaAnulada;
     }
 
-    // SCRUM-54
+    /**
+     * Obtiene facturas dentro de un periodo para generar reportes.
+     *
+     * @param fechaInicio Fecha inicial del periodo.
+     * @param fechaFin Fecha final del periodo.
+     * @returns Facturas encontradas en el rango.
+     */
     async obtenerDatosReportePeriodo(fechaInicio: Date, fechaFin: Date) {
         if (fechaInicio > fechaFin) {
             throw new BadRequestException('La fecha de inicio no puede ser mayor a la fecha fin.');

@@ -1,5 +1,10 @@
 import {IsEmail,IsNotEmpty,IsString,} from 'class-validator';
 
+/**
+ * DTO usado para crear clientes.
+ *
+ * @class CrearClienteDto
+ */
 export class CrearClienteDto {
   @IsString()
   @IsNotEmpty()

@@ -14,6 +14,8 @@ import { PagoCitaDto } from './pago-cita.dto';
 
 /**
  * DTO para recibir y validar los datos necesarios al agendar una cita.
+ *
+ * @class CrearCitaDto
  */
 export class CrearCitaDto {
   @ApiProperty({

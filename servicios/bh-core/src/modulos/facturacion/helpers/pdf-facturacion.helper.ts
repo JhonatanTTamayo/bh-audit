@@ -1,7 +1,19 @@
 import { Response } from 'express';
 import PDFDocument from 'pdfkit';
 
+/**
+ * Helper encargado de generar el PDF individual de una factura.
+ *
+ * @class PdfFacturaHelper
+ */
 export class PdfFacturaHelper {
+    /**
+     * Escribe en la respuesta HTTP el PDF de una factura.
+     *
+     * @param res Respuesta HTTP donde se envia el archivo.
+     * @param factura Datos de la factura a imprimir.
+     * @returns No retorna valor; finaliza el stream del PDF.
+     */
     static generarFacturaPdf(res: Response, factura: any): void {
         const doc = new PDFDocument({ margin: 50 });
 
@@ -48,7 +60,21 @@ export class PdfFacturaHelper {
     }
 }
 
+/**
+ * Helper encargado de generar reportes PDF de facturacion por periodo.
+ *
+ * @class PdfReporteHelper
+ */
 export class PdfReporteHelper {
+    /**
+     * Escribe en la respuesta HTTP el reporte de facturacion del periodo.
+     *
+     * @param res Respuesta HTTP donde se envia el archivo.
+     * @param facturas Facturas incluidas en el periodo.
+     * @param inicio Fecha inicial del reporte.
+     * @param fin Fecha final del reporte.
+     * @returns No retorna valor; finaliza el stream del PDF.
+     */
     static generarReportePeriodoPdf(
         res: Response,
         facturas: any[],

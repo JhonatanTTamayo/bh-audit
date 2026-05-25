@@ -6,6 +6,11 @@ import {
   Min,
 } from 'class-validator';
 
+/**
+ * DTO usado para prescribir medicamentos y descontar stock.
+ *
+ * @class PrescribirMedicamentoDto
+ */
 export class PrescribirMedicamentoDto {
 
   @IsUUID('4', {

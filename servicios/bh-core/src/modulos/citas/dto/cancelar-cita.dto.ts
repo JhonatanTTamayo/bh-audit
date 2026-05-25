@@ -3,6 +3,8 @@ import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 /**
  * DTO para recibir el motivo de cancelacion de una cita.
+ *
+ * @class CancelarCitaDto
  */
 export class CancelarCitaDto {
   @ApiProperty({

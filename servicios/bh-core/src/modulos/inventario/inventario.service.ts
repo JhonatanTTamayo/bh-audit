@@ -18,6 +18,13 @@ export class InventarioService {
         private prisma: PrismaService,
     ) { }
 
+    /**
+     * Crea un producto activo en inventario validando que no exista otro
+     * producto activo con el mismo nombre.
+     *
+     * @param crearProductoDto Datos del producto a crear.
+     * @returns Producto creado.
+     */
     async crear(crearProductoDto: CrearProductoDto) {
 
         const productoExistente =
@@ -46,6 +53,12 @@ export class InventarioService {
 
     }
 
+    /**
+     * Lista productos activos aplicando filtros opcionales por nombre y tipo.
+     *
+     * @param filtros Filtros opcionales de busqueda.
+     * @returns Lista de productos activos.
+     */
     async listar(filtros?: FiltroProductoDto) {
 
         return this.prisma.producto.findMany({
@@ -64,6 +77,12 @@ export class InventarioService {
 
     }
 
+    /**
+     * Obtiene un producto activo por ID o lanza error si no existe.
+     *
+     * @param id Identificador del producto.
+     * @returns Producto encontrado.
+     */
     async obtenerPorId(id: string) {
 
         const producto =
@@ -81,6 +100,13 @@ export class InventarioService {
 
     }
 
+    /**
+     * Actualiza los campos editables de un producto existente.
+     *
+     * @param id Identificador del producto.
+     * @param actualizarProductoDto Datos parciales del producto.
+     * @returns Producto actualizado.
+     */
     async actualizar(
         id: string,
         actualizarProductoDto: ActualizarProductoDto,
@@ -107,6 +133,12 @@ export class InventarioService {
 
     }
 
+    /**
+     * Realiza eliminacion logica de un producto marcandolo como inactivo.
+     *
+     * @param id Identificador del producto.
+     * @returns Producto marcado como inactivo.
+     */
     async eliminar(id: string) {
 
         await this.obtenerPorId(id);
@@ -121,6 +153,11 @@ export class InventarioService {
 
     }
 
+    /**
+     * Obtiene productos cuyo stock actual esta en el minimo o por debajo.
+     *
+     * @returns Lista de productos con stock bajo.
+     */
     async obtenerStockBajo() {
 
         const productos =
@@ -137,6 +174,12 @@ export class InventarioService {
 
     }
 
+    /**
+     * Obtiene productos activos que vencen dentro del rango de dias indicado.
+     *
+     * @param dias Cantidad de dias hacia adelante para consultar.
+     * @returns Lista de productos proximos a vencer.
+     */
     async obtenerProximosAVencer(
         dias = 30,
     ) {
@@ -159,6 +202,13 @@ export class InventarioService {
 
     }
 
+    /**
+     * Suma o resta unidades al stock de un producto sin permitir stock negativo.
+     *
+     * @param id Identificador del producto.
+     * @param cantidad Cantidad positiva o negativa a aplicar.
+     * @returns Producto con stock actualizado.
+     */
     async ajustarStock(
         id: string,
         cantidad: number,
@@ -188,6 +238,13 @@ export class InventarioService {
 
     }
 
+    /**
+     * Descuenta stock de un producto validando vencimiento y disponibilidad.
+     *
+     * @param id Identificador del producto.
+     * @param cantidad Cantidad a descontar.
+     * @returns Producto con stock decrementado.
+     */
     async descontarStock(
         id: string,
         cantidad: number,

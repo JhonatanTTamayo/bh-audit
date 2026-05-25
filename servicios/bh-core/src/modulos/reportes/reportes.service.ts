@@ -5,6 +5,15 @@ import { FiltroTrazabilidadDto } from './dto/filtro-trazabilidad.dto';
 @Injectable()
 export class ReportesService {
 
+  /**
+   * Obtiene los datos usados para generar el reporte PDF de trazabilidad.
+   *
+   * Actualmente retorna datos simulados mientras se completa la integracion
+   * con el microservicio bh-audit.
+   *
+   * @param filtros Rango de fechas y filtros opcionales.
+   * @returns Acciones de auditoria usadas para generar el PDF.
+   */
   async obtenerReporteTrazabilidad(
     filtros: FiltroTrazabilidadDto,
   ) {

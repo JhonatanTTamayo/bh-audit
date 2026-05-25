@@ -22,6 +22,9 @@ export class UsuariosService {
   /**
    * Lista las cuentas de recepcionistas y veterinarios pendientes de aprobación.
    */
+  /**
+   * @returns Lista de usuarios internos pendientes de aprobacion.
+   */
   async listarCuentasPendientesAprobacion() {
     const usuarios = await this.prisma.usuario.findMany({
       where: {
@@ -47,6 +50,10 @@ export class UsuariosService {
   /**
    * Aprueba una cuenta pendiente de aprobación administrativa.
    */
+  /**
+   * @param usuarioId Identificador del usuario pendiente.
+   * @returns Usuario aprobado con mensaje de confirmacion.
+   */
   async aprobarCuenta(usuarioId: string) {
     const usuario = await this.obtenerUsuarioInternoPendiente(usuarioId);
 
@@ -70,6 +77,11 @@ export class UsuariosService {
 
   /**
    * Rechaza una cuenta pendiente de aprobación administrativa.
+   */
+  /**
+   * @param usuarioId Identificador del usuario pendiente.
+   * @param rechazarCuentaDto Datos con el motivo de rechazo.
+   * @returns Usuario rechazado con mensaje de confirmacion.
    */
   async rechazarCuenta(usuarioId: string, rechazarCuentaDto:RechazarCuentaDto) {
     const usuario = await this.obtenerUsuarioInternoPendiente(usuarioId);
@@ -95,6 +107,10 @@ export class UsuariosService {
   /**
    * Obtiene y valida que el usuario exista, tenga rol interno,
    * correo verificado y estado pendiente de aprobación.
+   */
+  /**
+   * @param usuarioId Identificador del usuario a validar.
+   * @returns Usuario interno pendiente de aprobacion.
    */
   private async obtenerUsuarioInternoPendiente(usuarioId: string) {
     const usuario = await this.prisma.usuario.findUnique({
@@ -144,6 +160,10 @@ export class UsuariosService {
   /**
    * Formatea los datos básicos del usuario sin exponer información sensible.
    */
+  /**
+   * @param usuario Usuario con rol incluido.
+   * @returns Usuario sin datos sensibles.
+   */
   private formatearUsuario(usuario: {
     id: string;
     nombreCompleto: string;
@@ -168,6 +188,10 @@ export class UsuariosService {
 
   /**
  * Suspende una cuenta de usuario existente.
+ */
+/**
+ * @param usuarioId Identificador del usuario.
+ * @returns Usuario suspendido con mensaje de confirmacion.
  */
 async suspenderCuenta(usuarioId: string) {
   const usuario = await this.prisma.usuario.findUnique({
@@ -214,6 +238,10 @@ async suspenderCuenta(usuarioId: string) {
     /**
  * Lista usuarios registrados aplicando filtros opcionales por rol y estado.
  */
+/**
+ * @param filtros Filtros de rol, estado y paginacion.
+ * @returns Resultado paginado de usuarios.
+ */
 async listarUsuarios(filtros: FiltroUsuariosDto) {
   const page = filtros.page ?? 0;
   const size = filtros.size ?? 20;
@@ -258,6 +286,10 @@ async listarUsuarios(filtros: FiltroUsuariosDto) {
     /**
      * Formatea los datos básicos del usuario para el listado administrativo.
      */
+    /**
+     * @param usuario Usuario con datos administrativos.
+     * @returns Usuario formateado para listados.
+     */
     private formatearUsuarioListado(usuario: {
     id: string;
     nombreCompleto: string;
@@ -285,6 +317,13 @@ async listarUsuarios(filtros: FiltroUsuariosDto) {
     }
 
     
+/**
+ * Crea una cuenta de administrador y envia codigo de verificacion por correo.
+ */
+/**
+ * @param createAdminDto Datos requeridos para crear administrador.
+ * @returns Administrador creado y mensaje de verificacion.
+ */
 async crearAdministrador(createAdminDto: CreateAdminDto) {
   const usuarioExistente =
     await this.prisma.usuario.findUnique({

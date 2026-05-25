@@ -5,6 +5,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * DTO para recibir y validar los datos del pago de una cita.
+ *
+ * @class PagoCitaDto
  */
 export class PagoCitaDto {
   @ApiProperty({

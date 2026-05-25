@@ -1,3 +1,8 @@
+/**
+ * Tipos de acciones que bh-core puede enviar al servicio de auditoria.
+ *
+ * @typedef TipoAccionAudit
+ */
 export type TipoAccionAudit =
   | 'REGISTRO_USUARIO'
   | 'VERIFICACION_CORREO'
@@ -21,6 +26,11 @@ export type TipoAccionAudit =
   | 'DESACTIVACION_SERVICIO'
   | 'SUSPENSION_USUARIO';
 
+/**
+ * Contrato para registrar eventos de auditoria desde bh-core.
+ *
+ * @interface RegistrarEventoAuditDto
+ */
 export interface RegistrarEventoAuditDto {
   usuarioId?: string;
   nombreUsuario?: string;

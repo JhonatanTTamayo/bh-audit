@@ -11,4 +11,9 @@ import { PrismaService } from './prisma.service';
   providers: [PrismaService],
   exports: [PrismaService],
 })
+/**
+ * Modulo de base de datos que registra y exporta PrismaService.
+ *
+ * @class BasedatosModule
+ */
 export class BasedatosModule {}

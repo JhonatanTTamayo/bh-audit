@@ -4,6 +4,9 @@ import { IsEmail, IsNotEmpty, IsString, Length } from 'class-validator';
  * DTO utilizado para verificar el correo electrónico
  * mediante un código de verificación.
  */
+/**
+ * @class VerificarCorreoDto
+ */
 export class VerificarCorreoDto {
   @IsEmail()
   @IsNotEmpty()

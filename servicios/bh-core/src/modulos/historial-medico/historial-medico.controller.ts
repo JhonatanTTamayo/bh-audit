@@ -24,6 +24,9 @@ import { FiltroHistorialMedicoDto } from './dto/filtro-historial-medico.dto';
 /**
  * Controlador encargado de exponer endpoints del historial médico de mascotas.
  */
+/**
+ * @class HistorialMedicoController
+ */
 @Controller('mascotas')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class HistorialMedicoController {
@@ -37,6 +40,9 @@ export class HistorialMedicoController {
    *
    * Ruta:
    * POST /api/mascotas/historial-medico/prescribir
+   *
+   * @param dto Datos del producto y cantidad prescrita.
+   * @returns Mensaje de prescripcion correcta.
    */
   @Post('historial-medico/prescribir')
   @Roles('VETERINARIO')
@@ -54,6 +60,11 @@ export class HistorialMedicoController {
    *
    * Ruta:
    * POST /api/mascotas/:mascotaId/historial
+   *
+   * @param mascotaId Identificador UUID de la mascota.
+   * @param crearHistorialMedicoDto Datos clinicos del registro.
+   * @param request Peticion autenticada con el veterinario.
+   * @returns Registro medico creado.
    */
   @Post(':mascotaId/historial')
   @Roles('VETERINARIO')
@@ -74,6 +85,11 @@ export class HistorialMedicoController {
    *
    * Ruta:
    * GET /api/mascotas/:mascotaId/historial
+   *
+   * @param mascotaId Identificador UUID de la mascota.
+   * @param filtros Parametros opcionales de paginacion.
+   * @param request Peticion autenticada con el usuario solicitante.
+   * @returns Historial medico paginado de la mascota.
    */
   @Get(':mascotaId/historial')
   @Roles('VETERINARIO', 'RECEPCIONISTA', 'ADMIN', 'CLIENTE')
@@ -94,6 +110,11 @@ export class HistorialMedicoController {
    *
    * Ruta:
    * PUT /api/mascotas/historial/:registroId
+   *
+   * @param registroId Identificador UUID del registro medico.
+   * @param actualizarHistorialMedicoDto Datos corregidos del registro.
+   * @param request Peticion autenticada con el veterinario.
+   * @returns Registro medico actualizado.
    */
   @Put('historial/:registroId')
   @Roles('VETERINARIO')

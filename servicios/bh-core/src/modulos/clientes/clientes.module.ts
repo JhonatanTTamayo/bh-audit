@@ -9,4 +9,9 @@ import { AutenticacionModule } from '../autenticacion/autenticacion.module';
   controllers: [ClientesController],
   providers: [ClientesService],
 })
+/**
+ * Modulo que agrupa la gestion de clientes.
+ *
+ * @class ClientesModule
+ */
 export class ClientesModule {}

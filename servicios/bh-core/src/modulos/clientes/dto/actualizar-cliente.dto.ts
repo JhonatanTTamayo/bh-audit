@@ -1,5 +1,10 @@
 import {IsEmail,IsOptional,IsString,} from 'class-validator';
 
+/**
+ * DTO usado para actualizar datos parciales de un cliente.
+ *
+ * @class ActualizarClienteDto
+ */
 export class ActualizarClienteDto {
   @IsOptional()
   @IsString()

@@ -7,6 +7,9 @@ import { IsEmail, IsNotEmpty, IsOptional,IsString, IsUUID, MinLength } from 'cla
  * Este objeto representa el cuerpo de la petición
  * enviada al endpoint POST /api/autenticacion/registrar.
  */
+/**
+ * @class RegistroUsuarioDto
+ */
 export class RegistroUsuarioDto {
 
   /**

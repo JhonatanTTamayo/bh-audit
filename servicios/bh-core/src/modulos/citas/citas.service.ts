@@ -19,6 +19,8 @@ import { CorreosService } from '../correos/correos.service';
 
 /**
  * Servicio encargado de gestionar el agendamiento y ciclo de vida de citas.
+ *
+ * @class CitasService
  */
 @Injectable()
 export class CitasService {
@@ -41,6 +43,10 @@ export class CitasService {
 
   /**
    * Lista citas aplicando filtros dinamicos, paginacion y alcance por rol.
+   *
+   * @param filtros Filtros de busqueda, paginacion y rango de fechas.
+   * @param usuario Usuario autenticado usado para aplicar alcance por rol.
+   * @returns Resultado paginado con citas formateadas.
    */
   async listarCitas(filtros: FiltroCitasDto, usuario: JwtPayload) {
     const page = filtros.page ?? 0;
@@ -85,6 +91,10 @@ export class CitasService {
 
   /**
    * Obtiene una cita por ID respetando el alcance del rol autenticado.
+   *
+   * @param id Identificador UUID de la cita.
+   * @param usuario Usuario autenticado que solicita la informacion.
+   * @returns Cita formateada con relaciones principales.
    */
   async obtenerCitaPorId(id: string, usuario: JwtPayload) {
     const cita = await this.prisma.cita.findUnique({
@@ -108,6 +118,9 @@ export class CitasService {
 
   /**
    * Consulta horarios disponibles de un veterinario en una fecha.
+   *
+   * @param query Datos de consulta con veterinario y fecha.
+   * @returns Fecha, veterinario y lista de horarios libres.
    */
   async consultarDisponibilidad(query: ConsultarDisponibilidadDto) {
     const fecha = this.construirFechaCita(query.fecha);
@@ -156,6 +169,11 @@ export class CitasService {
 
   /**
    * Cancela una cita confirmada registrando el motivo de cancelacion.
+   *
+   * @param id Identificador UUID de la cita.
+   * @param cancelarCitaDto Datos con el motivo de cancelacion.
+   * @param usuario Usuario autenticado que ejecuta la accion.
+   * @returns Cita formateada con estado actualizado.
    */
   async cancelarCita(
     id: string,
@@ -195,6 +213,10 @@ export class CitasService {
 
   /**
    * Finaliza una cita despues de validar que exista historial medico.
+   *
+   * @param id Identificador UUID de la cita.
+   * @param usuario Veterinario autenticado que finaliza la cita.
+   * @returns Cita formateada con estado finalizado.
    */
   async finalizarCita(id: string, usuario: JwtPayload) {
     const cita = await this.prisma.cita.findUnique({
@@ -251,6 +273,10 @@ export class CitasService {
 
   /**
    * Agenda una cita con pago obligatorio.
+   *
+   * @param crearCitaDto Datos necesarios para crear la cita y registrar el pago.
+   * @param usuario Usuario autenticado que agenda la cita.
+   * @returns Cita creada con relaciones, servicios y pago.
    */
   async crearCita(crearCitaDto: CrearCitaDto, usuario: JwtPayload) {
     this.validarPagoObligatorio(crearCitaDto);
@@ -394,6 +420,12 @@ export class CitasService {
     return this.formatearCita(cita);
   }
 
+  /**
+   * Valida que la cita tenga pago y que la referencia exista cuando aplica.
+   *
+   * @param crearCitaDto Datos de la cita a validar.
+   * @returns No retorna valor; lanza excepcion si el pago es invalido.
+   */
   private validarPagoObligatorio(crearCitaDto: CrearCitaDto) {
     if (!crearCitaDto.pago) {
       throw new UnprocessableEntityException({
@@ -415,6 +447,12 @@ export class CitasService {
     }
   }
 
+  /**
+   * Evita que la misma cita incluya servicios repetidos.
+   *
+   * @param servicioIds Identificadores de servicios seleccionados.
+   * @returns No retorna valor; lanza excepcion si hay duplicados.
+   */
   private validarServiciosSinDuplicados(servicioIds: string[]) {
     const serviciosUnicos = new Set(servicioIds);
 
@@ -426,20 +464,45 @@ export class CitasService {
     }
   }
 
+  /**
+   * Convierte una fecha YYYY-MM-DD a Date en inicio de dia UTC.
+   *
+   * @param fecha Fecha en formato YYYY-MM-DD.
+   * @returns Objeto Date ubicado al inicio del dia UTC.
+   */
   private construirFechaCita(fecha: string): Date {
     return new Date(`${fecha}T00:00:00.000Z`);
   }
 
+  /**
+   * Obtiene el inicio del dia UTC para buscar registros relacionados.
+   *
+   * @param fecha Fecha base.
+   * @returns Inicio del dia UTC correspondiente.
+   */
   private obtenerInicioDia(fecha: Date): Date {
     return new Date(`${fecha.toISOString().slice(0, 10)}T00:00:00.000Z`);
   }
 
+  /**
+   * Obtiene el limite superior del dia UTC para consultas por rango.
+   *
+   * @param fecha Fecha base.
+   * @returns Inicio del dia siguiente en UTC.
+   */
   private obtenerFinDia(fecha: Date): Date {
     const finDia = this.obtenerInicioDia(fecha);
     finDia.setUTCDate(finDia.getUTCDate() + 1);
     return finDia;
   }
 
+  /**
+   * Valida que el rango de fechas del filtro tenga orden cronologico.
+   *
+   * @param fechaDesde Fecha inicial opcional.
+   * @param fechaHasta Fecha final opcional.
+   * @returns No retorna valor; lanza excepcion si el rango es invalido.
+   */
   private validarRangoFechas(fechaDesde?: string, fechaHasta?: string) {
     if (!fechaDesde || !fechaHasta) {
       return;
@@ -456,6 +519,13 @@ export class CitasService {
     }
   }
 
+  /**
+   * Construye el filtro Prisma para listar citas segun filtros y rol.
+   *
+   * @param filtros Filtros enviados por query params.
+   * @param usuario Usuario autenticado para aplicar alcance por rol.
+   * @returns Objeto where compatible con Prisma.
+   */
   private construirFiltrosListado(
     filtros: FiltroCitasDto,
     usuario: JwtPayload,
@@ -478,6 +548,13 @@ export class CitasService {
     return where;
   }
 
+  /**
+   * Construye el filtro Prisma para limitar citas por fecha desde/hasta.
+   *
+   * @param fechaDesde Fecha inicial opcional.
+   * @param fechaHasta Fecha final opcional.
+   * @returns Fragmento de filtro Prisma para fechas.
+   */
   private construirFiltroFechas(
     fechaDesde?: string,
     fechaHasta?: string,
@@ -498,6 +575,13 @@ export class CitasService {
     };
   }
 
+  /**
+   * Ajusta el filtro de listado segun el alcance permitido para cada rol.
+   *
+   * @param where Filtro Prisma que sera modificado.
+   * @param usuario Usuario autenticado.
+   * @returns No retorna valor; modifica el filtro recibido.
+   */
   private aplicarAlcancePorRol(
     where: Prisma.CitaWhereInput,
     usuario: JwtPayload,
@@ -517,6 +601,13 @@ export class CitasService {
     }
   }
 
+  /**
+   * Valida que el usuario autenticado tenga permiso para ver o modificar la cita.
+   *
+   * @param cita Cita cargada con relaciones.
+   * @param usuario Usuario autenticado.
+   * @returns No retorna valor; lanza excepcion si no tiene acceso.
+   */
   private validarAccesoCita(
     cita: Prisma.CitaGetPayload<{
       include: ReturnType<CitasService['incluirRelacionesCita']>;
@@ -542,6 +633,12 @@ export class CitasService {
     }
   }
 
+  /**
+   * Verifica que una cita pueda cancelarse segun su estado actual.
+   *
+   * @param cita Cita cargada con relaciones.
+   * @returns No retorna valor; lanza excepcion si no es cancelable.
+   */
   private validarCitaCancelable(
     cita: Prisma.CitaGetPayload<{
       include: ReturnType<CitasService['incluirRelacionesCita']>;
@@ -562,6 +659,12 @@ export class CitasService {
     }
   }
 
+  /**
+   * Verifica que una cita pueda finalizarse segun su estado actual.
+   *
+   * @param cita Cita cargada con relaciones.
+   * @returns No retorna valor; lanza excepcion si no es finalizable.
+   */
   private validarCitaFinalizable(
     cita: Prisma.CitaGetPayload<{
       include: ReturnType<CitasService['incluirRelacionesCita']>;
@@ -582,6 +685,12 @@ export class CitasService {
     }
   }
 
+  /**
+   * Calcula el total de la cita sumando los precios de los servicios.
+   *
+   * @param servicios Servicios activos seleccionados.
+   * @returns Total calculado como Decimal de Prisma.
+   */
   private calcularMontoTotal(
     servicios: Array<{
       precio: Prisma.Decimal;
@@ -593,6 +702,11 @@ export class CitasService {
     );
   }
 
+  /**
+   * Define las relaciones de Prisma necesarias para devolver una cita completa.
+   *
+   * @returns Configuracion include para consultas de cita.
+   */
   private incluirRelacionesCita() {
     return {
       mascota: {
@@ -614,6 +728,12 @@ export class CitasService {
     } satisfies Prisma.CitaInclude;
   }
 
+  /**
+   * Envia correo de confirmacion al cliente despues de agendar una cita.
+   *
+   * @param cita Cita creada con relaciones necesarias para el correo.
+   * @returns Promesa que finaliza cuando el correo fue enviado.
+   */
   private async enviarCorreoConfirmacion(
     cita: Prisma.CitaGetPayload<{
       include: ReturnType<CitasService['incluirRelacionesCita']>;
@@ -636,6 +756,12 @@ export class CitasService {
     );
   }
 
+  /**
+   * Normaliza la cita para responder datos de mascota, cliente, veterinario y pago.
+   *
+   * @param cita Cita cargada desde Prisma con relaciones.
+   * @returns Objeto de respuesta usado por los endpoints de citas.
+   */
   private formatearCita(
     cita: Prisma.CitaGetPayload<{
       include: ReturnType<CitasService['incluirRelacionesCita']>;

@@ -13,6 +13,9 @@ import { PrismaClient } from '@prisma/client';
  * manuales de PrismaClient en diferentes partes del proyecto.
  */
 @Injectable()
+/**
+ * @class PrismaService
+ */
 export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
@@ -21,6 +24,9 @@ export class PrismaService
    * Método llamado cuando el módulo se inicializa.
    * Se encarga de abrir la conexión con la base de datos al iniciar
    * la aplicación.
+   */
+  /**
+   * @returns Promesa que se resuelve cuando Prisma conecta.
    */
   async onModuleInit() {
     await this.$connect();
@@ -31,6 +37,9 @@ export class PrismaService
    *
    * Se encarga de cerrar la conexión con la base de datos de forma
    * controlada al detener la aplicación.
+   */
+  /**
+   * @returns Promesa que se resuelve cuando Prisma desconecta.
    */
   async onModuleDestroy() {
     await this.$disconnect();

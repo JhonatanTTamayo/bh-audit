@@ -13,6 +13,11 @@ export class MascotasService {
   /**
    * Registra una nueva mascota asociada a un cliente.
    *
+   * Valida que el cliente exista antes de crear la relacion.
+   *
+   * @param clienteId Identificador del cliente propietario.
+   * @param dto Datos de la mascota.
+   * @returns Mascota creada.
    */
 
   async crearMascota(clienteId: string, dto: CrearMascotaDto) {
