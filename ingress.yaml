@@ -1,0 +1,49 @@
+﻿apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bh-ingress
+  namespace: bh-core
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: bh.breaze.local
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: bh-core-service
+            port:
+              number: 8080
+      - path: /audit
+        pathType: Prefix
+        backend:
+          service:
+            name: bh-audit-service
+            port:
+              number: 8081
+            namespace: bh-audit
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bh-audit-ingress
+  namespace: bh-audit
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: audit.breaze.local
+    http:
+      paths:
+      - path: /(/?)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: bh-audit-service
+            port:
+              number: 8081
