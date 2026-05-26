@@ -1,0 +1,39 @@
+﻿apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bh-audit-network-policy
+  namespace: bh-audit
+spec:
+  podSelector:
+    matchLabels:
+      app: bh-audit
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: bh-core
+    ports:
+    - protocol: TCP
+      port: 8081
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-audit-policy
+  namespace: bh-audit
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres-audit
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: bh-audit
+    ports:
+    - protocol: TCP
+      port: 5432

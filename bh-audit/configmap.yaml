@@ -1,0 +1,11 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bh-audit-config
+  namespace: bh-audit
+data:
+  DB_HOST: "postgres-audit"
+  DB_PORT: "5432"
+  DB_NAME: "bhaudit"
+  SERVER_PORT: "8081"
+  SPRING_PROFILES_ACTIVE: "kubernetes"

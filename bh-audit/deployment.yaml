@@ -1,0 +1,49 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bh-audit
+  namespace: bh-audit
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bh-audit
+  template:
+    metadata:
+      labels:
+        app: bh-audit
+    spec:
+      containers:
+      - name: bh-audit
+        image: bh-audit:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+        envFrom:
+        - configMapRef:
+            name: bh-audit-config
+        livenessProbe:
+          httpGet:
+            path: /health/liveness
+            port: 8081
+          initialDelaySeconds: 90
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health/readiness
+            port: 8081
+          initialDelaySeconds: 60
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bh-audit-service
+  namespace: bh-audit
+spec:
+  selector:
+    app: bh-audit
+  ports:
+  - port: 8081
+    targetPort: 8081
+  type: ClusterIP
