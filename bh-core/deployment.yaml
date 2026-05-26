@@ -1,0 +1,55 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bh-core
+  namespace: bh-core
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bh-core
+  template:
+    metadata:
+      labels:
+        app: bh-core
+    spec:
+      containers:
+      - name: bh-core
+        image: bh-core:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: bh-core-config
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bh-core-db-secret
+              key: password
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 45
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bh-core-service
+  namespace: bh-core
+spec:
+  selector:
+    app: bh-core
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
