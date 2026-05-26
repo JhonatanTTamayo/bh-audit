@@ -1,0 +1,46 @@
+﻿apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-audit
+  namespace: bh-audit
+spec:
+  serviceName: postgres-audit
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-audit
+  template:
+    metadata:
+      labels:
+        app: postgres-audit
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_DB
+          value: "bhaudit"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: audit-db-secret
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: audit-db-secret
+              key: password
+        ports:
+        - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-audit
+  namespace: bh-audit
+spec:
+  selector:
+    app: postgres-audit
+  ports:
+  - port: 5432
+    targetPort: 5432

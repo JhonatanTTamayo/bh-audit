@@ -1,0 +1,3335 @@
+openapi: 3.0.3
+info:
+  title: Breaze & Harold Veterinary System — API completa
+  description: 'Especificación OpenAPI combinada del sistema Breaze & Harold Veterinary
+    System.
+
+
+    Este contrato agrupa los dos microservicios del proyecto:
+
+    - **bh-core**: operación principal de la clínica veterinaria.
+
+    - **bh-audit**: trazabilidad interna de acciones del sistema.
+
+  version: 1.0.0
+  contact:
+    name: Equipo de Desarrollo B&H
+    email: dev@bh-vet.com
+  license:
+    name: Propietario — Breaze & Harold Veterinary System
+servers:
+- url: https://api.bh-vet.com
+  description: Servidor base de producción del sistema
+- url: http://localhost
+  description: Servidor base local del sistema
+tags:
+- name: Auth
+  description: Registro, verificación e inicio de sesión de usuarios
+- name: Usuarios
+  description: Administración de cuentas de usuario (solo administrador)
+- name: Clientes
+  description: Gestión de clientes de la clínica
+- name: Mascotas
+  description: Gestión de mascotas vinculadas a clientes
+- name: Citas
+  description: Agendamiento y gestión del ciclo de vida de citas
+- name: Historial Médico
+  description: Registro y consulta del historial clínico de mascotas
+- name: Vacunación
+  description: Registro y consulta de vacunas aplicadas
+- name: Hospitalización
+  description: Internamiento y seguimiento de mascotas hospitalizadas
+- name: Inventario
+  description: Control de medicamentos, vacunas e insumos quirúrgicos
+- name: Servicios
+  description: Catálogo de servicios de la clínica
+- name: Facturación
+  description: Generación y gestión de facturas
+- name: Reportes
+  description: Generación de reportes en PDF
+- name: Audit — Trazabilidad
+  description: Recepción, almacenamiento y consulta del historial de acciones del
+    sistema.
+paths:
+  /auth/registro:
+    post:
+      tags:
+      - Auth
+      summary: Registrar nuevo usuario
+      description: 'Cualquier persona puede crear una cuenta. Al completar el registro
+        el sistema
+
+        envía un código de verificación al correo indicado.
+
+        - **cliente**: la cuenta queda activa tras verificar el correo.
+
+        - **recepcionista / veterinario**: requieren aprobación adicional del administrador.
+
+        '
+      operationId: registrarUsuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroRequest'
+            example:
+              nombre: María García
+              email: maria@ejemplo.com
+              password: P@ssw0rd123
+              telefono: '3001234567'
+              rol: cliente
+      responses:
+        '201':
+          description: Usuario registrado. Código de verificación enviado al correo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MensajeResponse'
+              example:
+                mensaje: Registro exitoso. Revisa tu correo para verificar tu cuenta.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: El correo ya está registrado en el sistema.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                codigo: EMAIL_DUPLICADO
+                mensaje: El correo electrónico ya está registrado.
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /auth/verificar-correo:
+    post:
+      tags:
+      - Auth
+      summary: Verificar correo electrónico con código
+      description: "El usuario ingresa el código de verificación recibido por correo.\n\
+        - Para **clientes**, la cuenta queda activa inmediatamente.\n- Para **recepcionistas\
+        \ y veterinarios**, la cuenta queda en estado `pendiente_aprobacion`\n  hasta\
+        \ que el administrador la active.\n"
+      operationId: verificarCorreo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificacionCorreoRequest'
+            example:
+              email: maria@ejemplo.com
+              codigo: '482913'
+      responses:
+        '200':
+          description: Correo verificado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MensajeResponse'
+              example:
+                mensaje: Correo verificado. Tu cuenta está activa.
+        '400':
+          description: Código inválido o expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                codigo: CODIGO_INVALIDO
+                mensaje: El código de verificación es incorrecto o ha expirado.
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /auth/login:
+    post:
+      tags:
+      - Auth
+      summary: Iniciar sesión
+      description: 'Autentica al usuario y devuelve un token JWT.
+
+        Solo los usuarios con cuenta activa pueden iniciar sesión.
+
+        Los intentos fallidos quedan registrados en el servicio de auditoría.
+
+        '
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: maria@ejemplo.com
+              password: P@ssw0rd123
+      responses:
+        '200':
+          description: Inicio de sesión exitoso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciales incorrectas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                codigo: CREDENCIALES_INVALIDAS
+                mensaje: Email o contraseña incorrectos.
+        '403':
+          description: Cuenta no activa (pendiente de aprobación o suspendida).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                codigo: CUENTA_INACTIVA
+                mensaje: Tu cuenta está pendiente de aprobación por el administrador.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /usuarios:
+    get:
+      tags:
+      - Usuarios
+      summary: Listar usuarios del sistema
+      description: Devuelve todos los usuarios registrados. Solo accesible por el
+        administrador.
+      operationId: listarUsuarios
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/RolFiltro'
+      - $ref: '#/components/parameters/EstadoCuentaFiltro'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Lista de usuarios.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedUsuarios'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /usuarios/{usuarioId}:
+    get:
+      tags:
+      - Usuarios
+      summary: Obtener usuario por ID
+      operationId: obtenerUsuario
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/UsuarioId'
+      responses:
+        '200':
+          description: Datos del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /usuarios/{usuarioId}/aprobar:
+    patch:
+      tags:
+      - Usuarios
+      summary: Aprobar cuenta de recepcionista o veterinario
+      description: 'El administrador aprueba manualmente la cuenta de un recepcionista
+        o veterinario
+
+        que ha verificado su correo y está en estado `pendiente_aprobacion`.
+
+        '
+      operationId: aprobarUsuario
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/UsuarioId'
+      responses:
+        '200':
+          description: Cuenta aprobada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MensajeResponse'
+        '400':
+          description: El usuario no está en estado pendiente de aprobación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /usuarios/{usuarioId}/rechazar:
+    patch:
+      tags:
+      - Usuarios
+      summary: Rechazar cuenta de recepcionista o veterinario
+      operationId: rechazarUsuario
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/UsuarioId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MotivoRequest'
+      responses:
+        '200':
+          description: Cuenta rechazada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MensajeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /usuarios/{usuarioId}/suspender:
+    patch:
+      tags:
+      - Usuarios
+      summary: Suspender cuenta de usuario
+      description: El administrador desactiva una cuenta activa.
+      operationId: suspenderUsuario
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/UsuarioId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MotivoRequest'
+      responses:
+        '200':
+          description: Cuenta suspendida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MensajeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /clientes:
+    get:
+      tags:
+      - Clientes
+      summary: Listar clientes
+      description: '**Roles permitidos**: `recepcionista`, `administrador`.
+
+        '
+      operationId: listarClientes
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: busqueda
+        in: query
+        description: Filtrar por nombre, apellido o correo
+        schema:
+          type: string
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Lista paginada de clientes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedClientes'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+      - Clientes
+      summary: Registrar cliente
+      description: 'La recepcionista registra un nuevo cliente con sus datos de contacto.
+
+
+        **Roles permitidos**: `recepcionista`.
+
+        '
+      operationId: crearCliente
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteRequest'
+      responses:
+        '201':
+          description: Cliente registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Ya existe un cliente con ese correo o documento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /clientes/{clienteId}:
+    get:
+      tags:
+      - Clientes
+      summary: Obtener cliente por ID
+      description: '**Roles permitidos**: `recepcionista`, `administrador`. El propio
+        cliente puede
+
+        consultar su información usando su token.
+
+        '
+      operationId: obtenerCliente
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Datos del cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - Clientes
+      summary: Actualizar datos del cliente
+      description: '**Roles permitidos**: `recepcionista`.
+
+        '
+      operationId: actualizarCliente
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteRequest'
+      responses:
+        '200':
+          description: Cliente actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /clientes/{clienteId}/mascotas:
+    get:
+      tags:
+      - Mascotas
+      summary: Listar mascotas de un cliente
+      description: '**Roles permitidos**: `recepcionista`, `veterinario`, `administrador`,
+        y el propio `cliente`.
+
+        '
+      operationId: listarMascotasDeCliente
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Lista de mascotas del cliente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mascota'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - Mascotas
+      summary: Registrar mascota para un cliente
+      description: '**Roles permitidos**: `recepcionista`.
+
+        '
+      operationId: crearMascota
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MascotaRequest'
+      responses:
+        '201':
+          description: Mascota registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mascota'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /mascotas/{mascotaId}:
+    get:
+      tags:
+      - Mascotas
+      summary: Obtener mascota por ID
+      operationId: obtenerMascota
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/MascotaId'
+      responses:
+        '200':
+          description: Datos de la mascota.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mascota'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - Mascotas
+      summary: Actualizar datos de la mascota
+      description: '**Roles permitidos**: `recepcionista`. El peso se actualiza automáticamente
+
+        también al registrar una consulta en el historial médico.
+
+        '
+      operationId: actualizarMascota
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/MascotaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MascotaRequest'
+      responses:
+        '200':
+          description: Mascota actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mascota'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /citas:
+    get:
+      tags:
+      - Citas
+      summary: Listar citas
+      description: '- `cliente`: ve solo sus propias citas.
+
+        - `veterinario`: ve solo las citas asignadas a él.
+
+        - `recepcionista` / `administrador`: ven todas las citas.
+
+        '
+      operationId: listarCitas
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: veterinarioId
+        in: query
+        schema:
+          type: string
+          format: uuid
+        description: Filtrar por veterinario
+      - name: mascotaId
+        in: query
+        schema:
+          type: string
+          format: uuid
+        description: Filtrar por mascota
+      - name: estado
+        in: query
+        schema:
+          $ref: '#/components/schemas/EstadoCita'
+      - name: fechaDesde
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Fecha de inicio del rango (YYYY-MM-DD)
+      - name: fechaHasta
+        in: query
+        schema:
+          type: string
+          format: date
+        description: Fecha de fin del rango (YYYY-MM-DD)
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Lista paginada de citas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedCitas'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags:
+      - Citas
+      summary: Agendar nueva cita
+      description: 'Agenda una cita y registra el pago de los servicios seleccionados.
+
+        **El pago es obligatorio** — sin él la cita no se confirma.
+
+        El sistema valida que no exista cruce de horario para el veterinario asignado.
+
+        Al confirmar, se envía un correo automático al cliente.
+
+
+        **Roles permitidos**: `recepcionista`, `cliente`.
+
+        '
+      operationId: crearCita
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CitaRequest'
+            example:
+              mascotaId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              veterinarioId: 7cb94e91-1234-4321-b3fc-9d853f11bcd2
+              fecha: '2025-08-15'
+              hora: '10:00'
+              servicioIds:
+              - aab5c123-0000-0000-0000-000000000001
+              - aab5c123-0000-0000-0000-000000000002
+              pago:
+                metodo: tarjeta
+                referencia: TXN-20250815-001
+      responses:
+        '201':
+          description: Cita confirmada y pago registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cita'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: El veterinario ya tiene una cita en ese horario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                codigo: HORARIO_OCUPADO
+                mensaje: El veterinario ya tiene una cita agendada en ese horario.
+        '422':
+          description: Pago rechazado o información de pago incompleta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /citas/{citaId}:
+    get:
+      tags:
+      - Citas
+      summary: Obtener cita por ID
+      operationId: obtenerCita
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/CitaId'
+      responses:
+        '200':
+          description: Datos de la cita.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cita'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /citas/{citaId}/finalizar:
+    patch:
+      tags:
+      - Citas
+      summary: Marcar cita como finalizada
+      description: 'Marca la cita como finalizada después de que el veterinario haya
+        registrado el historial médico correspondiente.
+
+
+        El registro clínico de la atención se crea previamente en `POST /mascotas/{mascotaId}/historial`,
+        donde se documentan motivo de visita, diagnóstico, tratamiento, medicamentos
+        prescritos, peso actual y próxima visita.
+
+
+        **Roles permitidos**: `veterinario`.'
+      operationId: finalizarCita
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/CitaId'
+      responses:
+        '200':
+          description: Cita finalizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cita'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /citas/{citaId}/cancelar:
+    patch:
+      tags:
+      - Citas
+      summary: Cancelar cita
+      description: 'Cancela una cita que aún no ha sido atendida. Se debe registrar
+        el motivo.
+
+        El reembolso queda a criterio administrativo y no lo gestiona el sistema.
+
+
+        **Roles permitidos**: `recepcionista`, `administrador`.
+
+        '
+      operationId: cancelarCita
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/CitaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MotivoRequest'
+      responses:
+        '200':
+          description: Cita cancelada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cita'
+        '400':
+          description: La cita ya fue atendida o no puede cancelarse.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /citas/disponibilidad:
+    get:
+      tags:
+      - Citas
+      summary: Consultar disponibilidad de veterinario
+      description: 'Devuelve los horarios disponibles de un veterinario en una fecha
+        específica.
+
+
+        **Roles permitidos**: `recepcionista`, `cliente`.
+
+        '
+      operationId: consultarDisponibilidad
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: veterinarioId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: fecha
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+        description: Fecha a consultar (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Horarios disponibles.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fecha:
+                    type: string
+                    format: date
+                  veterinarioId:
+                    type: string
+                    format: uuid
+                  horariosDisponibles:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                    - 08:00
+                    - 09:00
+                    - '10:00'
+                    - '14:00'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /mascotas/{mascotaId}/historial:
+    get:
+      tags:
+      - Historial Médico
+      summary: Consultar historial médico de una mascota
+      description: '**Roles permitidos**: `veterinario`, `recepcionista`, `administrador`,
+        y el `cliente`
+
+        dueño de la mascota.
+
+        '
+      operationId: listarHistorial
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/MascotaId'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Historial médico de la mascota.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedHistorialMedico'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - Historial Médico
+      summary: Registrar consulta en el historial médico
+      description: 'El veterinario registra el resultado de la consulta al finalizar
+        la cita.
+
+        El peso de la mascota se actualiza automáticamente con el valor registrado
+        aquí.
+
+
+        **Roles permitidos**: `veterinario`.
+
+        '
+      operationId: crearRegistroHistorial
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/MascotaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistorialMedicoRequest'
+      responses:
+        '201':
+          description: Registro médico creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorialMedico'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /historial/{registroId}:
+    get:
+      tags:
+      - Historial Médico
+      summary: Obtener registro médico por ID
+      operationId: obtenerRegistroHistorial
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/RegistroId'
+      responses:
+        '200':
+          description: Registro médico.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorialMedico'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - Historial Médico
+      summary: Editar registro médico
+      description: 'El veterinario puede corregir un registro **únicamente durante
+        las primeras 24 horas**
+
+        después de haberlo creado. Pasado ese tiempo el registro queda bloqueado.
+
+
+        **Roles permitidos**: `veterinario` (solo el creador del registro).
+
+        '
+      operationId: editarRegistroHistorial
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/RegistroId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistorialMedicoRequest'
+      responses:
+        '200':
+          description: Registro actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistorialMedico'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: No tiene permiso para editar este registro o han pasado más
+            de 24 horas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                codigo: EDICION_EXPIRADA
+                mensaje: El período de edición de 24 horas ha expirado.
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /mascotas/{mascotaId}/vacunas:
+    get:
+      tags:
+      - Vacunación
+      summary: Consultar vacunas de una mascota
+      description: '**Roles permitidos**: `veterinario`, `recepcionista`, `administrador`,
+        y el `cliente`
+
+        dueño de la mascota.
+
+        '
+      operationId: listarVacunas
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/MascotaId'
+      responses:
+        '200':
+          description: Listado de vacunas aplicadas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vacuna'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+      - Vacunación
+      summary: Registrar vacuna aplicada
+      description: 'El veterinario registra una vacuna aplicada dentro del historial
+        de la mascota.
+
+
+        **Roles permitidos**: `veterinario`.
+
+        '
+      operationId: registrarVacuna
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/MascotaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VacunaRequest'
+      responses:
+        '201':
+          description: Vacuna registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vacuna'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /vacunas/proximas-a-vencer:
+    get:
+      tags:
+      - Vacunación
+      summary: Listar mascotas con vacunas próximas a vencer
+      description: 'Devuelve las mascotas cuyas vacunas vencen en los próximos N días
+        (default 30).
+
+
+        **Roles permitidos**: `veterinario`, `recepcionista`.
+
+        '
+      operationId: vacunasProximasAVencer
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: dias
+        in: query
+        schema:
+          type: integer
+          default: 30
+          minimum: 1
+        description: Días de anticipación para la alerta
+      responses:
+        '200':
+          description: Mascotas con vacunas próximas a vencer.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertaVacuna'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /mascotas/{mascotaId}/hospitalizacion:
+    post:
+      tags:
+      - Hospitalización
+      summary: Internar mascota
+      description: 'El veterinario interna una mascota. El estado de la mascota cambia
+        a `hospitalizada`.
+
+
+        **Roles permitidos**: `veterinario`.
+
+        '
+      operationId: internacionMascota
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/MascotaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HospitalizacionRequest'
+      responses:
+        '201':
+          description: Mascota internada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hospitalizacion'
+        '400':
+          description: La mascota ya está hospitalizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /hospitalizacion/{hospitalizacionId}/evolucion:
+    post:
+      tags:
+      - Hospitalización
+      summary: Registrar nota de evolución diaria
+      description: 'El veterinario registra una nota de evolución por cada día que
+        la mascota permanezca
+
+        internada.
+
+
+        **Roles permitidos**: `veterinario`.
+
+        '
+      operationId: registrarEvolucion
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/HospitalizacionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotaEvolucionRequest'
+      responses:
+        '201':
+          description: Nota de evolución registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotaEvolucion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /hospitalizacion/{hospitalizacionId}/alta:
+    patch:
+      tags:
+      - Hospitalización
+      summary: Dar de alta a la mascota
+      description: 'Registra el alta de la mascota. El estado de la mascota se actualiza
+        según el
+
+        estado de egreso: `recuperada` → `activa`, `fallecida` → `fallecida`,
+
+        `trasladada` → `activa`.
+
+
+        **Roles permitidos**: `veterinario`.
+
+        '
+      operationId: altaHospitalizacion
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/HospitalizacionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AltaRequest'
+      responses:
+        '200':
+          description: Alta registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hospitalizacion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /inventario:
+    get:
+      tags:
+      - Inventario
+      summary: Listar productos del inventario
+      description: '**Roles permitidos**: `administrador`, `veterinario`, `recepcionista`.
+
+        '
+      operationId: listarInventario
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: tipo
+        in: query
+        schema:
+          $ref: '#/components/schemas/TipoProducto'
+      - name: stockBajo
+        in: query
+        schema:
+          type: boolean
+        description: Si `true`, devuelve solo los productos por debajo del stock mínimo
+      - name: proximoAVencer
+        in: query
+        schema:
+          type: boolean
+        description: Si `true`, devuelve solo los productos próximos a vencer (30
+          días)
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Lista paginada de productos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedProductos'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+      - Inventario
+      summary: Registrar producto en inventario
+      description: '**Roles permitidos**: `administrador`.
+
+        '
+      operationId: crearProducto
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductoRequest'
+      responses:
+        '201':
+          description: Producto registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /inventario/{productoId}:
+    get:
+      tags:
+      - Inventario
+      summary: Obtener producto por ID
+      operationId: obtenerProducto
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ProductoId'
+      responses:
+        '200':
+          description: Datos del producto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - Inventario
+      summary: Actualizar producto del inventario
+      description: 'Permite ajustar stock, precio y fecha de vencimiento.
+
+        Los ajustes manuales de stock quedan registrados en auditoría.
+
+
+        **Roles permitidos**: `administrador`.
+
+        '
+      operationId: actualizarProducto
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ProductoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductoRequest'
+      responses:
+        '200':
+          description: Producto actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /servicios:
+    get:
+      tags:
+      - Servicios
+      summary: Listar servicios del catálogo
+      description: 'Por defecto devuelve solo los servicios activos. Con `incluirInactivos=true`
+
+        devuelve todos (solo para administrador).
+
+
+        **Roles permitidos**: todos los roles autenticados.
+
+        '
+      operationId: listarServicios
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: incluirInactivos
+        in: query
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: Lista de servicios.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Servicio'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+      - Servicios
+      summary: Crear nuevo servicio
+      description: '**Roles permitidos**: `administrador`.
+
+        '
+      operationId: crearServicio
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServicioRequest'
+      responses:
+        '201':
+          description: Servicio creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Servicio'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /servicios/{servicioId}:
+    get:
+      tags:
+      - Servicios
+      summary: Obtener servicio por ID
+      operationId: obtenerServicio
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ServicioId'
+      responses:
+        '200':
+          description: Datos del servicio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Servicio'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+      - Servicios
+      summary: Editar servicio del catálogo
+      description: 'Permite modificar nombre, descripción y precio.
+
+
+        **Roles permitidos**: `administrador`.
+
+        '
+      operationId: editarServicio
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ServicioId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServicioRequest'
+      responses:
+        '200':
+          description: Servicio actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Servicio'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /servicios/{servicioId}/desactivar:
+    patch:
+      tags:
+      - Servicios
+      summary: Desactivar servicio del catálogo
+      description: 'Un servicio desactivado no puede seleccionarse en nuevas citas,
+        pero sigue
+
+        visible en el historial de citas y facturas donde fue usado.
+
+
+        **Roles permitidos**: `administrador`.
+
+        '
+      operationId: desactivarServicio
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ServicioId'
+      responses:
+        '200':
+          description: Servicio desactivado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Servicio'
+        '400':
+          description: El servicio ya está desactivado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /facturas:
+    get:
+      tags:
+      - Facturación
+      summary: Listar facturas
+      description: '- `cliente`: ve solo sus propias facturas.
+
+        - `recepcionista` / `administrador`: ven todas.
+
+        '
+      operationId: listarFacturas
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: clienteId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: estado
+        in: query
+        schema:
+          $ref: '#/components/schemas/EstadoFactura'
+      - name: fechaDesde
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: fechaHasta
+        in: query
+        schema:
+          type: string
+          format: date
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Lista paginada de facturas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedFacturas'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags:
+      - Facturación
+      summary: Generar factura
+      description: 'La recepcionista genera la factura al terminar una atención. Refleja
+        los
+
+        servicios prestados (incluyendo los pagados al agendar) y los medicamentos
+
+        adicionales despachados, con posibilidad de aplicar descuento.
+
+
+        **Roles permitidos**: `recepcionista`.
+
+        '
+      operationId: crearFactura
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacturaRequest'
+      responses:
+        '201':
+          description: Factura generada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Factura'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /facturas/{facturaId}:
+    get:
+      tags:
+      - Facturación
+      summary: Obtener factura por ID
+      operationId: obtenerFactura
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/FacturaId'
+      responses:
+        '200':
+          description: Datos de la factura.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Factura'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /facturas/{facturaId}/anular:
+    patch:
+      tags:
+      - Facturación
+      summary: Anular factura
+      description: 'Marca la factura como anulada. Se debe registrar el motivo.
+
+        La anulación **no** borra el historial médico ni devuelve el inventario.
+
+
+        **Roles permitidos**: `recepcionista`, `administrador`.
+
+        '
+      operationId: anularFactura
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/FacturaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MotivoRequest'
+      responses:
+        '200':
+          description: Factura anulada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Factura'
+        '400':
+          description: La factura ya está anulada o pagada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /facturas/{facturaId}/pdf:
+    get:
+      tags:
+      - Facturación
+      summary: Descargar factura en PDF
+      description: 'El cliente puede descargar su factura en PDF en cualquier momento
+        desde su cuenta.
+
+
+        **Roles permitidos**: `cliente` (solo sus propias facturas), `recepcionista`,
+        `administrador`.
+
+        '
+      operationId: descargarFacturaPdf
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/FacturaId'
+      responses:
+        '200':
+          description: Archivo PDF de la factura.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /reportes/citas:
+    get:
+      tags:
+      - Reportes
+      summary: Reporte de citas por período (PDF)
+      description: 'Listado de todas las citas en un rango de fechas con nombre del
+        cliente,
+
+        mascota, veterinario y estado final.
+
+
+        **Roles permitidos**: `administrador`.
+
+        '
+      operationId: reporteCitas
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/FechaDesde'
+      - $ref: '#/components/parameters/FechaHasta'
+      responses:
+        '200':
+          description: Reporte PDF de citas.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /reportes/facturacion:
+    get:
+      tags:
+      - Reportes
+      summary: Reporte de facturación por período (PDF)
+      description: 'Resumen de facturas generadas en el rango, con total facturado,
+
+        descuentos aplicados y estado.
+
+
+        **Roles permitidos**: `administrador`.
+
+        '
+      operationId: reporteFacturacion
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/FechaDesde'
+      - $ref: '#/components/parameters/FechaHasta'
+      responses:
+        '200':
+          description: Reporte PDF de facturación.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /reportes/inventario:
+    get:
+      tags:
+      - Reportes
+      summary: Reporte de inventario actual (PDF)
+      description: 'Listado completo de productos con stock, precio unitario, vencimiento
+
+        e identificación clara de productos críticos.
+
+
+        **Roles permitidos**: `administrador`.
+
+        '
+      operationId: reporteInventario
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Reporte PDF de inventario.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /reportes/historial-acciones:
+    get:
+      tags:
+      - Reportes
+      summary: Reporte de historial de acciones (PDF)
+      description: 'Registro de todas las acciones ocurridas en el sistema en el rango
+        de fechas,
+
+        con usuario, rol, acción y fecha/hora exacta. bh-core consulta los datos a
+
+        bh-audit para generar este reporte.
+
+
+        **Roles permitidos**: `administrador`.
+
+        '
+      operationId: reporteHistorialAcciones
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/FechaDesde'
+      - $ref: '#/components/parameters/FechaHasta'
+      - name: usuarioId
+        in: query
+        schema:
+          type: string
+          format: uuid
+        description: Filtrar por usuario específico
+      - name: tipoAccion
+        in: query
+        schema:
+          $ref: '#/components/schemas/TipoAccion'
+      responses:
+        '200':
+          description: Reporte PDF del historial de acciones.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    servers:
+    - url: https://api.bh-vet.com/bh-core/v1
+      description: Servidor de producción — bh-core
+    - url: http://localhost:8080/bh-core/v1
+      description: Entorno local — bh-core
+  /eventos:
+    post:
+      tags:
+      - Audit — Trazabilidad
+      summary: Registrar evento de auditoría
+      description: '**Uso interno exclusivo.**
+
+
+        bh-core notifica a bh-audit cada vez que ocurre una acción relevante en el
+        sistema.
+
+        Este endpoint no está expuesto al exterior del clúster de Kubernetes y solo
+        debe ser
+
+        invocado por bh-core mediante la cabecera `X-Internal-Service-Key`.
+
+
+        Si bh-audit no está disponible momentáneamente, bh-core debe continuar operando
+        con normalidad.
+
+        '
+      operationId: registrarEvento
+      security:
+      - InternalServiceKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoAuditoriaRequest'
+            example:
+              usuarioId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              nombreUsuario: María García
+              rol: recepcionista
+              tipoAccion: CREACION_CITA
+              descripcion: Se agendó una cita para la mascota Luna.
+              fechaHora: '2026-05-16T15:30:00Z'
+              metadata:
+                citaId: 9f83f23a-2f91-4c28-983c-3a41b102ab77
+                mascotaId: 76411bdf-8448-4062-957e-6f784a9a3e91
+      responses:
+        '201':
+          description: Evento registrado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoAuditoria'
+        '400':
+          $ref: '#/components/responses/AuditBadRequest'
+        '401':
+          $ref: '#/components/responses/AuditUnauthorized'
+        '503':
+          $ref: '#/components/responses/AuditServiceUnavailable'
+    servers:
+    - url: https://api.bh-vet.com/bh-audit/v1
+      description: Servidor de producción — bh-audit
+    - url: http://localhost:8081/bh-audit/v1
+      description: Entorno local — bh-audit
+  /eventos/consulta:
+    get:
+      tags:
+      - Audit — Trazabilidad
+      summary: Consultar historial de eventos
+      description: '**Uso interno exclusivo.**
+
+
+        bh-core invoca este endpoint para consultar el historial de acciones con filtros
+        y generar
+
+        el reporte PDF de trazabilidad. Este endpoint no debe exponerse directamente
+        al exterior
+
+        del clúster.
+
+        '
+      operationId: consultarEventos
+      security:
+      - InternalServiceKey: []
+      parameters:
+      - name: usuarioId
+        in: query
+        required: false
+        description: Filtra los eventos ejecutados por un usuario específico.
+        schema:
+          type: string
+          format: uuid
+      - name: rol
+        in: query
+        required: false
+        description: Filtra los eventos por rol del usuario que ejecutó la acción.
+        schema:
+          $ref: '#/components/schemas/RolUsuario'
+      - name: tipoAccion
+        in: query
+        required: false
+        description: Filtra los eventos por tipo de acción registrada.
+        schema:
+          $ref: '#/components/schemas/TipoAccion'
+      - $ref: '#/components/parameters/FechaDesde'
+      - $ref: '#/components/parameters/FechaHasta'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Historial de eventos paginado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedEventosAuditoria'
+        '400':
+          $ref: '#/components/responses/AuditBadRequest'
+        '401':
+          $ref: '#/components/responses/AuditUnauthorized'
+        '503':
+          $ref: '#/components/responses/AuditServiceUnavailable'
+    servers:
+    - url: https://api.bh-vet.com/bh-audit/v1
+      description: Servidor de producción — bh-audit
+    - url: http://localhost:8081/bh-audit/v1
+      description: Entorno local — bh-audit
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenido al iniciar sesión en `/auth/login`.
+    InternalServiceKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Service-Key
+      description: 'Clave de autenticación interna para comunicación entre microservicios
+
+        (`bh-core` → `bh-audit`). No debe exponerse al exterior del clúster.
+
+        '
+  parameters:
+    UsuarioId:
+      name: usuarioId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ClienteId:
+      name: clienteId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MascotaId:
+      name: mascotaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CitaId:
+      name: citaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RegistroId:
+      name: registroId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    HospitalizacionId:
+      name: hospitalizacionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ProductoId:
+      name: productoId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ServicioId:
+      name: servicioId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    FacturaId:
+      name: facturaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RolFiltro:
+      name: rol
+      in: query
+      schema:
+        $ref: '#/components/schemas/RolUsuario'
+    EstadoCuentaFiltro:
+      name: estado
+      in: query
+      schema:
+        $ref: '#/components/schemas/EstadoCuenta'
+    FechaDesde:
+      name: fechaDesde
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      description: Fecha de inicio del rango (YYYY-MM-DD)
+    FechaHasta:
+      name: fechaHasta
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+      description: Fecha de fin del rango (YYYY-MM-DD)
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+      description: Número de página (base 0)
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+      description: Elementos por página
+  responses:
+    BadRequest:
+      description: Datos de entrada inválidos o incompletos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            codigo: VALIDACION_FALLIDA
+            mensaje: Los datos proporcionados no son válidos.
+            detalles:
+            - campo: email
+              error: El formato del correo electrónico no es válido.
+    Unauthorized:
+      description: Token de autenticación ausente o inválido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            codigo: NO_AUTENTICADO
+            mensaje: Se requiere autenticación para acceder a este recurso.
+    Forbidden:
+      description: El rol del usuario no tiene permiso para ejecutar esta acción.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            codigo: ACCESO_DENEGADO
+            mensaje: Tu rol no tiene permiso para realizar esta operación.
+    NotFound:
+      description: El recurso solicitado no existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            codigo: RECURSO_NO_ENCONTRADO
+            mensaje: El recurso solicitado no fue encontrado.
+    AuditBadRequest:
+      description: Datos de entrada inválidos, incompletos o filtros mal formados.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            codigo: VALIDACION_FALLIDA
+            mensaje: Los datos proporcionados no son válidos.
+            detalles:
+            - campo: fechaDesde
+              error: La fecha inicial debe tener formato YYYY-MM-DD.
+    AuditUnauthorized:
+      description: Clave interna ausente o inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            codigo: CLAVE_INTERNA_INVALIDA
+            mensaje: Se requiere una clave interna válida para acceder a este recurso.
+    AuditServiceUnavailable:
+      description: El servicio de auditoría no puede procesar la solicitud temporalmente.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            codigo: AUDITORIA_NO_DISPONIBLE
+            mensaje: El servicio de auditoría no está disponible temporalmente.
+  schemas:
+    RolUsuario:
+      type: string
+      enum:
+      - cliente
+      - recepcionista
+      - veterinario
+      - administrador
+      description: Rol del usuario en el sistema.
+    EstadoCuenta:
+      type: string
+      enum:
+      - pendiente_verificacion
+      - pendiente_aprobacion
+      - activo
+      - rechazado
+      - suspendido
+      description: '- `pendiente_verificacion`: creó su cuenta pero aún no verificó
+        el correo.
+
+        - `pendiente_aprobacion`: verificó el correo (recepcionista/veterinario),
+        esperando al admin.
+
+        - `activo`: puede iniciar sesión.
+
+        - `rechazado`: solicitud rechazada por el administrador.
+
+        - `suspendido`: cuenta desactivada por el administrador.
+
+        '
+    EstadoMascota:
+      type: string
+      enum:
+      - activa
+      - hospitalizada
+      - fallecida
+    EstadoCita:
+      type: string
+      enum:
+      - confirmada
+      - finalizada
+      - cancelada
+    EstadoFactura:
+      type: string
+      enum:
+      - pendiente_pago
+      - pagada
+      - anulada
+    TipoProducto:
+      type: string
+      enum:
+      - medicamento
+      - vacuna
+      - insumo_quirurgico
+    EstadoEgreso:
+      type: string
+      enum:
+      - recuperada
+      - fallecida
+      - trasladada
+    TipoAccion:
+      type: string
+      enum:
+      - REGISTRO_USUARIO
+      - VERIFICACION_CORREO
+      - APROBACION_CUENTA
+      - RECHAZO_CUENTA
+      - LOGIN_EXITOSO
+      - LOGIN_FALLIDO
+      - CREACION_CITA
+      - CAMBIO_ESTADO_CITA
+      - PAGO_CITA
+      - CREACION_HISTORIAL
+      - EDICION_HISTORIAL
+      - REGISTRO_VACUNA
+      - INICIO_HOSPITALIZACION
+      - ALTA_HOSPITALIZACION
+      - CREACION_FACTURA
+      - ANULACION_FACTURA
+      - AJUSTE_INVENTARIO
+      - CREACION_SERVICIO
+      - EDICION_SERVICIO
+      - DESACTIVACION_SERVICIO
+      - SUSPENSION_USUARIO
+    RegistroRequest:
+      type: object
+      required:
+      - nombre
+      - email
+      - password
+      - telefono
+      - rol
+      properties:
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: María García
+        email:
+          type: string
+          format: email
+          example: maria@ejemplo.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Mínimo 8 caracteres, debe incluir mayúsculas, minúsculas y
+            números.
+        telefono:
+          type: string
+          pattern: ^[0-9]{7,15}$
+          example: '3001234567'
+        rol:
+          $ref: '#/components/schemas/RolUsuario'
+    VerificacionCorreoRequest:
+      type: object
+      required:
+      - email
+      - codigo
+      properties:
+        email:
+          type: string
+          format: email
+        codigo:
+          type: string
+          minLength: 6
+          maxLength: 6
+    LoginRequest:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    MotivoRequest:
+      type: object
+      required:
+      - motivo
+      properties:
+        motivo:
+          type: string
+          minLength: 5
+          maxLength: 500
+          example: El cliente solicitó cancelación por cambio de planes.
+    ClienteRequest:
+      type: object
+      required:
+      - nombre
+      - apellido
+      - email
+      - telefono
+      - documento
+      properties:
+        nombre:
+          type: string
+          example: Juan
+        apellido:
+          type: string
+          example: Pérez
+        email:
+          type: string
+          format: email
+        telefono:
+          type: string
+        documento:
+          type: string
+          description: Número de cédula o documento de identidad
+        direccion:
+          type: string
+    MascotaRequest:
+      type: object
+      required:
+      - nombre
+      - especie
+      - raza
+      - color
+      - fechaNacimiento
+      - peso
+      properties:
+        nombre:
+          type: string
+          example: Luna
+        especie:
+          type: string
+          example: Perro
+        raza:
+          type: string
+          example: Golden Retriever
+        color:
+          type: string
+          example: Dorado
+        fechaNacimiento:
+          type: string
+          format: date
+          example: '2020-03-15'
+        peso:
+          type: number
+          format: float
+          minimum: 0
+          example: 12.5
+          description: Peso en kilogramos
+    CitaRequest:
+      type: object
+      required:
+      - mascotaId
+      - veterinarioId
+      - fecha
+      - hora
+      - servicioIds
+      - pago
+      properties:
+        mascotaId:
+          type: string
+          format: uuid
+        veterinarioId:
+          type: string
+          format: uuid
+        fecha:
+          type: string
+          format: date
+        hora:
+          type: string
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          example: '10:00'
+        servicioIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+        pago:
+          $ref: '#/components/schemas/PagoRequest'
+    PagoRequest:
+      type: object
+      required:
+      - metodo
+      properties:
+        metodo:
+          type: string
+          enum:
+          - efectivo
+          - tarjeta
+          - transferencia
+        referencia:
+          type: string
+          description: Referencia de la transacción (requerida para tarjeta y transferencia)
+    HistorialMedicoRequest:
+      type: object
+      required:
+      - citaId
+      - motivoVisita
+      - diagnostico
+      - tratamiento
+      - peso
+      properties:
+        citaId:
+          type: string
+          format: uuid
+        motivoVisita:
+          type: string
+        diagnostico:
+          type: string
+        tratamiento:
+          type: string
+        medicamentosPrescritos:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicamentoPrescritoRequest'
+        peso:
+          type: number
+          format: float
+          minimum: 0
+          description: Peso actual de la mascota en kg (actualiza el registro de la
+            mascota)
+        fechaProximaVisita:
+          type: string
+          format: date
+    MedicamentoPrescritoRequest:
+      type: object
+      required:
+      - productoId
+      - dosis
+      - duracion
+      properties:
+        productoId:
+          type: string
+          format: uuid
+          description: ID del producto en inventario
+        dosis:
+          type: string
+          example: 1 tableta cada 12 horas
+        duracion:
+          type: string
+          example: 7 días
+    VacunaRequest:
+      type: object
+      required:
+      - nombre
+      - fechaAplicacion
+      - fechaProximaDosis
+      properties:
+        nombre:
+          type: string
+          example: Parvovirus + Distemper
+        productoId:
+          type: string
+          format: uuid
+          description: ID del producto en inventario (opcional, para descuento automático)
+        fechaAplicacion:
+          type: string
+          format: date
+        fechaProximaDosis:
+          type: string
+          format: date
+        observaciones:
+          type: string
+    HospitalizacionRequest:
+      type: object
+      required:
+      - motivoIngreso
+      - veterinarioId
+      properties:
+        motivoIngreso:
+          type: string
+        veterinarioId:
+          type: string
+          format: uuid
+        observacionesIniciales:
+          type: string
+    NotaEvolucionRequest:
+      type: object
+      required:
+      - nota
+      properties:
+        nota:
+          type: string
+          description: Descripción del estado de la mascota en el día
+    AltaRequest:
+      type: object
+      required:
+      - estadoEgreso
+      - observaciones
+      properties:
+        estadoEgreso:
+          $ref: '#/components/schemas/EstadoEgreso'
+        observaciones:
+          type: string
+    ProductoRequest:
+      type: object
+      required:
+      - nombre
+      - tipo
+      - stockDisponible
+      - stockMinimo
+      - precio
+      - fechaVencimiento
+      properties:
+        nombre:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoProducto'
+        stockDisponible:
+          type: integer
+          minimum: 0
+        stockMinimo:
+          type: integer
+          minimum: 0
+          description: Umbral mínimo; por debajo genera alerta
+        precio:
+          type: number
+          format: float
+          minimum: 0
+        fechaVencimiento:
+          type: string
+          format: date
+        descripcion:
+          type: string
+    ServicioRequest:
+      type: object
+      required:
+      - nombre
+      - precio
+      properties:
+        nombre:
+          type: string
+          example: Consulta general
+        descripcion:
+          type: string
+        precio:
+          type: number
+          format: float
+          minimum: 0
+    FacturaRequest:
+      type: object
+      required:
+      - citaId
+      properties:
+        citaId:
+          type: string
+          format: uuid
+        medicamentosAdicionales:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemFacturaRequest'
+          description: Medicamentos despachados adicionales no incluidos en el pago
+            inicial
+        descuento:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Porcentaje de descuento (0–100)
+    ItemFacturaRequest:
+      type: object
+      required:
+      - productoId
+      - cantidad
+      properties:
+        productoId:
+          type: string
+          format: uuid
+        cantidad:
+          type: integer
+          minimum: 1
+    MensajeResponse:
+      type: object
+      properties:
+        mensaje:
+          type: string
+    ErrorResponse:
+      type: object
+      required:
+      - codigo
+      - mensaje
+      properties:
+        codigo:
+          type: string
+          description: Código de error interno del sistema
+        mensaje:
+          type: string
+          description: Descripción legible del error
+        detalles:
+          type: array
+          items:
+            type: object
+            properties:
+              campo:
+                type: string
+              error:
+                type: string
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT de acceso
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          description: Tiempo de expiración en segundos
+          example: 3600
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        email:
+          type: string
+          format: email
+        telefono:
+          type: string
+        rol:
+          $ref: '#/components/schemas/RolUsuario'
+        estadoCuenta:
+          $ref: '#/components/schemas/EstadoCuenta'
+        creadoEn:
+          type: string
+          format: date-time
+        actualizadoEn:
+          type: string
+          format: date-time
+    Cliente:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        apellido:
+          type: string
+        email:
+          type: string
+          format: email
+        telefono:
+          type: string
+        documento:
+          type: string
+        direccion:
+          type: string
+        creadoEn:
+          type: string
+          format: date-time
+    Mascota:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        clienteId:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        especie:
+          type: string
+        raza:
+          type: string
+        color:
+          type: string
+        fechaNacimiento:
+          type: string
+          format: date
+        peso:
+          type: number
+          format: float
+          description: Último peso registrado (kg)
+        estado:
+          $ref: '#/components/schemas/EstadoMascota'
+        creadoEn:
+          type: string
+          format: date-time
+        actualizadoEn:
+          type: string
+          format: date-time
+    Cita:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mascota:
+          $ref: '#/components/schemas/Mascota'
+        veterinario:
+          $ref: '#/components/schemas/Usuario'
+        fecha:
+          type: string
+          format: date
+        hora:
+          type: string
+          example: '10:00'
+        servicios:
+          type: array
+          items:
+            $ref: '#/components/schemas/Servicio'
+        montoTotal:
+          type: number
+          format: float
+        pago:
+          $ref: '#/components/schemas/Pago'
+        estado:
+          $ref: '#/components/schemas/EstadoCita'
+        motivoCancelacion:
+          type: string
+          nullable: true
+        creadoEn:
+          type: string
+          format: date-time
+    Pago:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        metodo:
+          type: string
+        referencia:
+          type: string
+        monto:
+          type: number
+          format: float
+        fechaPago:
+          type: string
+          format: date-time
+    HistorialMedico:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mascotaId:
+          type: string
+          format: uuid
+        citaId:
+          type: string
+          format: uuid
+        veterinario:
+          $ref: '#/components/schemas/Usuario'
+        motivoVisita:
+          type: string
+        diagnostico:
+          type: string
+        tratamiento:
+          type: string
+        medicamentosPrescritos:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicamentoPrescrito'
+        peso:
+          type: number
+          format: float
+        fechaProximaVisita:
+          type: string
+          format: date
+          nullable: true
+        creadoEn:
+          type: string
+          format: date-time
+        editableHasta:
+          type: string
+          format: date-time
+          description: Timestamp hasta el cual el veterinario puede editar el registro
+            (24h después de creación)
+    MedicamentoPrescrito:
+      type: object
+      properties:
+        productoId:
+          type: string
+          format: uuid
+        nombreProducto:
+          type: string
+        dosis:
+          type: string
+        duracion:
+          type: string
+    Vacuna:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mascotaId:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        productoId:
+          type: string
+          format: uuid
+          nullable: true
+        fechaAplicacion:
+          type: string
+          format: date
+        fechaProximaDosis:
+          type: string
+          format: date
+        observaciones:
+          type: string
+          nullable: true
+        veterinario:
+          $ref: '#/components/schemas/Usuario'
+    AlertaVacuna:
+      type: object
+      properties:
+        mascota:
+          $ref: '#/components/schemas/Mascota'
+        cliente:
+          $ref: '#/components/schemas/Cliente'
+        vacuna:
+          $ref: '#/components/schemas/Vacuna'
+        diasRestantes:
+          type: integer
+          description: Días que faltan para el vencimiento de la dosis
+    Hospitalizacion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mascota:
+          $ref: '#/components/schemas/Mascota'
+        veterinario:
+          $ref: '#/components/schemas/Usuario'
+        fechaIngreso:
+          type: string
+          format: date-time
+        motivoIngreso:
+          type: string
+        notasEvolucion:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotaEvolucion'
+        fechaEgreso:
+          type: string
+          format: date-time
+          nullable: true
+        estadoEgreso:
+          allOf:
+          - $ref: '#/components/schemas/EstadoEgreso'
+          nullable: true
+    NotaEvolucion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fecha:
+          type: string
+          format: date
+        nota:
+          type: string
+        veterinario:
+          $ref: '#/components/schemas/Usuario'
+    Producto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoProducto'
+        stockDisponible:
+          type: integer
+        stockMinimo:
+          type: integer
+        precio:
+          type: number
+          format: float
+        fechaVencimiento:
+          type: string
+          format: date
+        descripcion:
+          type: string
+          nullable: true
+        stockBajo:
+          type: boolean
+          description: 'Calculado: `stockDisponible < stockMinimo`'
+        proximoAVencer:
+          type: boolean
+          description: 'Calculado: vence en los próximos 30 días'
+    Servicio:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        descripcion:
+          type: string
+          nullable: true
+        precio:
+          type: number
+          format: float
+        activo:
+          type: boolean
+    Factura:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        cita:
+          $ref: '#/components/schemas/Cita'
+        cliente:
+          $ref: '#/components/schemas/Cliente'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemFactura'
+        subtotal:
+          type: number
+          format: float
+        descuentoPorcentaje:
+          type: number
+          format: float
+        descuentoValor:
+          type: number
+          format: float
+        montoYaPagado:
+          type: number
+          format: float
+          description: Monto pagado al momento de agendar la cita
+        saldoRestante:
+          type: number
+          format: float
+        total:
+          type: number
+          format: float
+        estado:
+          $ref: '#/components/schemas/EstadoFactura'
+        motivoAnulacion:
+          type: string
+          nullable: true
+        generadaEn:
+          type: string
+          format: date-time
+        generadaPor:
+          $ref: '#/components/schemas/Usuario'
+    ItemFactura:
+      type: object
+      properties:
+        descripcion:
+          type: string
+        cantidad:
+          type: integer
+        precioUnitario:
+          type: number
+          format: float
+        subtotal:
+          type: number
+          format: float
+        tipo:
+          type: string
+          enum:
+          - servicio
+          - medicamento
+    PagedUsuarios:
+      allOf:
+      - $ref: '#/components/schemas/PaginationMeta'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/Usuario'
+    PagedClientes:
+      allOf:
+      - $ref: '#/components/schemas/PaginationMeta'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/Cliente'
+    PagedCitas:
+      allOf:
+      - $ref: '#/components/schemas/PaginationMeta'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/Cita'
+    PagedHistorialMedico:
+      allOf:
+      - $ref: '#/components/schemas/PaginationMeta'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/HistorialMedico'
+    PagedProductos:
+      allOf:
+      - $ref: '#/components/schemas/PaginationMeta'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/Producto'
+    PagedFacturas:
+      allOf:
+      - $ref: '#/components/schemas/PaginationMeta'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/Factura'
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Número de página actual (base 0)
+        size:
+          type: integer
+          description: Tamaño de la página
+        totalElements:
+          type: integer
+          description: Total de elementos en la colección
+        totalPages:
+          type: integer
+          description: Total de páginas disponibles
+        first:
+          type: boolean
+        last:
+          type: boolean
+    EventoAuditoriaRequest:
+      type: object
+      required:
+      - tipoAccion
+      - descripcion
+      - fechaHora
+      properties:
+        usuarioId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID del usuario que ejecutó la acción. Puede ser nulo en eventos
+            como login fallido.
+        nombreUsuario:
+          type: string
+          nullable: true
+          description: Nombre del usuario o identificador usado en la acción.
+        rol:
+          allOf:
+          - $ref: '#/components/schemas/RolUsuario'
+          nullable: true
+          description: Rol del usuario. Puede ser nulo si la acción ocurrió antes
+            de autenticar al usuario.
+        tipoAccion:
+          $ref: '#/components/schemas/TipoAccion'
+        descripcion:
+          type: string
+          minLength: 5
+          maxLength: 1000
+          description: Descripción legible de la acción ejecutada.
+        fechaHora:
+          type: string
+          format: date-time
+          description: Fecha y hora exacta en que ocurrió la acción.
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Datos adicionales del evento, por ejemplo ID del recurso afectado.
+    EventoAuditoria:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        usuarioId:
+          type: string
+          format: uuid
+          nullable: true
+        nombreUsuario:
+          type: string
+          nullable: true
+        rol:
+          allOf:
+          - $ref: '#/components/schemas/RolUsuario'
+          nullable: true
+        tipoAccion:
+          $ref: '#/components/schemas/TipoAccion'
+        descripcion:
+          type: string
+        fechaHora:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        creadoEn:
+          type: string
+          format: date-time
+          description: Fecha y hora en que bh-audit almacenó el evento.
+    PagedEventosAuditoria:
+      allOf:
+      - $ref: '#/components/schemas/PaginationMeta'
+      - type: object
+        properties:
+          content:
+            type: array
+            items:
+              $ref: '#/components/schemas/EventoAuditoria'

@@ -1,0 +1,287 @@
+import {
+    BadRequestException,
+    NotFoundException,
+} from '@nestjs/common';
+
+import { Injectable } from '@nestjs/common';
+
+import { PrismaService } from '../../basedatos/prisma.service';
+
+import { CrearProductoDto } from './dto/crear-producto.dto';
+import { ActualizarProductoDto } from './dto/actualizar-producto.dto';
+import { FiltroProductoDto } from './dto/filtro-producto.dto';
+
+@Injectable()
+export class InventarioService {
+
+    constructor(
+        private prisma: PrismaService,
+    ) { }
+
+    /**
+     * Crea un producto activo en inventario validando que no exista otro
+     * producto activo con el mismo nombre.
+     *
+     * @param crearProductoDto Datos del producto a crear.
+     * @returns Producto creado.
+     */
+    async crear(crearProductoDto: CrearProductoDto) {
+
+        const productoExistente =
+            await this.prisma.producto.findFirst({
+                where: {
+                    nombre: crearProductoDto.nombre,
+                    activo: true,
+                },
+            });
+
+        if (productoExistente) {
+            throw new BadRequestException(
+                'Ya existe un producto con ese nombre',
+            );
+        }
+
+        return this.prisma.producto.create({
+            data: {
+                ...crearProductoDto,
+
+                fechaVencimiento: new Date(
+                    crearProductoDto.fechaVencimiento,
+                ),
+            },
+        });
+
+    }
+
+    /**
+     * Lista productos activos aplicando filtros opcionales por nombre y tipo.
+     *
+     * @param filtros Filtros opcionales de busqueda.
+     * @returns Lista de productos activos.
+     */
+    async listar(filtros?: FiltroProductoDto) {
+
+        return this.prisma.producto.findMany({
+            where: {
+                activo: true,
+
+                nombre: filtros?.nombre
+                    ? {
+                        contains: filtros.nombre,
+                    }
+                    : undefined,
+
+                tipo: filtros?.tipo,
+            },
+        });
+
+    }
+
+    /**
+     * Obtiene un producto activo por ID o lanza error si no existe.
+     *
+     * @param id Identificador del producto.
+     * @returns Producto encontrado.
+     */
+    async obtenerPorId(id: string) {
+
+        const producto =
+            await this.prisma.producto.findUnique({
+                where: { id },
+            });
+
+        if (!producto || !producto.activo) {
+            throw new NotFoundException(
+                'Producto no encontrado',
+            );
+        }
+
+        return producto;
+
+    }
+
+    /**
+     * Actualiza los campos editables de un producto existente.
+     *
+     * @param id Identificador del producto.
+     * @param actualizarProductoDto Datos parciales del producto.
+     * @returns Producto actualizado.
+     */
+    async actualizar(
+        id: string,
+        actualizarProductoDto: ActualizarProductoDto,
+    ) {
+
+        await this.obtenerPorId(id);
+
+        return this.prisma.producto.update({
+            where: {
+                id,
+            },
+
+            data: {
+                ...actualizarProductoDto,
+
+                fechaVencimiento:
+                    actualizarProductoDto.fechaVencimiento
+                        ? new Date(
+                            actualizarProductoDto.fechaVencimiento,
+                        )
+                        : undefined,
+            },
+        });
+
+    }
+
+    /**
+     * Realiza eliminacion logica de un producto marcandolo como inactivo.
+     *
+     * @param id Identificador del producto.
+     * @returns Producto marcado como inactivo.
+     */
+    async eliminar(id: string) {
+
+        await this.obtenerPorId(id);
+
+        return this.prisma.producto.update({
+            where: { id },
+
+            data: {
+                activo: false,
+            },
+        });
+
+    }
+
+    /**
+     * Obtiene productos cuyo stock actual esta en el minimo o por debajo.
+     *
+     * @returns Lista de productos con stock bajo.
+     */
+    async obtenerStockBajo() {
+
+        const productos =
+            await this.prisma.producto.findMany({
+                where: {
+                    activo: true,
+                },
+            });
+
+        return productos.filter(
+            producto =>
+                producto.stock <= producto.stockMinimo,
+        );
+
+    }
+
+    /**
+     * Obtiene productos activos que vencen dentro del rango de dias indicado.
+     *
+     * @param dias Cantidad de dias hacia adelante para consultar.
+     * @returns Lista de productos proximos a vencer.
+     */
+    async obtenerProximosAVencer(
+        dias = 30,
+    ) {
+
+        const fechaLimite = new Date();
+
+        fechaLimite.setDate(
+            fechaLimite.getDate() + dias,
+        );
+
+        return this.prisma.producto.findMany({
+            where: {
+                activo: true,
+
+                fechaVencimiento: {
+                    lte: fechaLimite,
+                },
+            },
+        });
+
+    }
+
+    /**
+     * Suma o resta unidades al stock de un producto sin permitir stock negativo.
+     *
+     * @param id Identificador del producto.
+     * @param cantidad Cantidad positiva o negativa a aplicar.
+     * @returns Producto con stock actualizado.
+     */
+    async ajustarStock(
+        id: string,
+        cantidad: number,
+    ) {
+
+        const producto =
+            await this.obtenerPorId(id);
+
+        const nuevoStock =
+            producto.stock + cantidad;
+
+        if (nuevoStock < 0) {
+            throw new BadRequestException(
+                'El stock no puede ser negativo',
+            );
+        }
+
+        return this.prisma.producto.update({
+            where: {
+                id,
+            },
+
+            data: {
+                stock: nuevoStock,
+            },
+        });
+
+    }
+
+    /**
+     * Descuenta stock de un producto validando vencimiento y disponibilidad.
+     *
+     * @param id Identificador del producto.
+     * @param cantidad Cantidad a descontar.
+     * @returns Producto con stock decrementado.
+     */
+    async descontarStock(
+        id: string,
+        cantidad: number,
+    ) {
+
+        const producto =
+            await this.obtenerPorId(id);
+
+        // VALIDAR SI ESTÁ VENCIDO
+        if (
+            producto.fechaVencimiento <
+            new Date()
+        ) {
+            throw new BadRequestException(
+                'El producto está vencido',
+            );
+        }
+
+        // VALIDAR STOCK
+        if (producto.stock < cantidad) {
+            throw new BadRequestException(
+                'Stock insuficiente',
+            );
+        }
+
+        return this.prisma.producto.update({
+            where: {
+                id,
+            },
+
+            data: {
+                stock: {
+                    decrement: cantidad,
+                },
+            },
+        });
+
+    }
+
+}
