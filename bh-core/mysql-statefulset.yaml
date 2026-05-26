@@ -1,0 +1,63 @@
+﻿apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-core
+  namespace: bh-core
+spec:
+  selector:
+    app: mysql-core
+  ports:
+  - port: 3306
+    targetPort: 3306
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-core
+  namespace: bh-core
+spec:
+  serviceName: mysql-core
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-core
+  template:
+    metadata:
+      labels:
+        app: mysql-core
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bh-core-db-secret
+              key: root-password
+        - name: MYSQL_DATABASE
+          value: "bhcore"
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: bh-core-db-secret
+              key: username
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bh-core-db-secret
+              key: password
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
